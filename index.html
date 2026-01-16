@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cronograma Lab FQ-053 (Online)</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { --primary: #0056b3; --success: #28a745; --info: #17a2b8; --bg: #f8f9fa; --card: #ffffff; --border: #dee2e6; }
+        body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        /* Loading Overlay */
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 999; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); font-weight: bold; }
+
+        header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
+        h1 { margin: 0; color: var(--primary); font-size: 1.6rem; }
+        
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
+        .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .dash-val { display: block; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        .dash-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: 600; }
+
+        .controls { background: #e9ecef; padding: 20px; border-radius: 8px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 30px; }
+        .control-group { display: flex; flex-direction: column; }
+        label.ctrl-label { font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; color: #495057; }
+        input { padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
+        .btn-update { background: var(--primary); color: white; }
+        .btn-update:hover { background: #004494; }
+        .btn-add { background: var(--info); color: white; }
+        .btn-add:hover { background: #138496; }
+
+        .add-area { background: #d1ecf1; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #bee5eb; }
+        .add-area.visible { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+
+        .progress-container { margin-bottom: 30px; }
+        .progress-bar-bg { background: #e9ecef; height: 16px; border-radius: 8px; overflow: hidden; }
+        .progress-fill { height: 100%; background: var(--success); width: 0%; transition: width 0.5s ease; }
+        .progress-text { text-align: right; font-size: 0.8rem; color: #666; margin-top: 5px; font-weight: 600; }
+
+        h2 { font-size: 1.2rem; margin: 40px 0 15px 0; padding-left: 10px; border-left: 5px solid var(--primary); color: #444; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; }
+        th { background: var(--primary); color: white; padding: 12px 15px; text-align: left; }
+        td { padding: 12px 15px; border-bottom: 1px solid var(--border); vertical-align: top; }
+        
+        .checklist-item { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 6px; transition: background 0.1s; border: 1px solid transparent; cursor: pointer; }
+        .checklist-item:hover { background-color: #f1f3f5; border-color: #e9ecef; }
+        .item-header { display: flex; align-items: center; width: 100%; }
+        input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--success); margin: 0 12px 0 0; }
+        .model-info { font-weight: 600; color: #2c3e50; font-size: 0.95rem; }
+        .tags { display: inline-flex; gap: 5px; margin-left: 10px; align-items: center; }
+        .tag { font-size: 0.75rem; padding: 3px 8px; border-radius: 12px; font-weight: 600; }
+        .tag-sample { background: #e2e6ea; color: #495057; }
+        .tag-new { background: var(--success); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+        .tag-extra { background: var(--info); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
+        .obs-input { width: 96%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; color: #555; margin-left: 34px; background: #fff; }
+        
+        .completed-row { background: #fafafa; opacity: 0.8; }
+        .completed-row .model-info { text-decoration: line-through; color: #999; }
+        .today-row { background-color: #e8f0fe !important; border-left: 4px solid var(--primary); }
+        .today-label { color: var(--primary); font-weight: bold; }
+        
+        @media print { .controls, .add-area, button { display: none; } .container { box-shadow: none; max-width: 100%; padding: 0; } }
+    </style>
+</head>
+<body>
+
+<div id="loadingOverlay">Carregando dados...</div>
+
+<div class="container">
+    <header>
+        <div>
+            <h1>Lab FQ-053 <span style="font-size:0.6em; background:#28a745; color:white; padding:2px 6px; border-radius:4px; vertical-align:middle;">ONLINE</span></h1>
+            <div style="color:#666; margin-top:5px;">Processo 2024Ele278 | Sincronizado com Supabase</div>
+        </div>
+        <button onclick="location.reload()" style="background:#6c757d; color:white;">🔄 Recarregar Dados</button>
+    </header>
+
+    <div class="dashboard">
+        <div class="dash-card"><span class="dash-val" id="valTotal">--</span><span class="dash-label">Total Amostras</span></div>
+        <div class="dash-card"><span class="dash-val" id="valDone" style="color: var(--success);">0</span><span class="dash-label">Realizados</span></div>
+        <div class="dash-card"><span class="dash-val" id="valRemaining">--</span><span class="dash-label">Fila (Pendentes)</span></div>
+        <div class="dash-card"><span class="dash-val" id="valFinishDate">--/--</span><span class="dash-label">Previsão Fim</span></div>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label class="ctrl-label">Início do Projeto:</label>
+            <input type="date" id="startDate" onchange="renderApp()">
+        </div>
+        <div class="control-group">
+            <label class="ctrl-label">Meta Diária (Qtd):</label>
+            <input type="number" id="dailyLimit" value="4" min="1" style="width: 80px;" onchange="renderApp()">
+        </div>
+        <div class="control-group" style="margin-left: auto;">
+            <button class="btn-add" onclick="toggleAddArea()">➕ Adicionar Modelo</button>
+        </div>
+    </div>
+
+    <div id="addArea" class="add-area">
+        <div class="control-group" style="flex-grow: 1;">
+            <label class="ctrl-label">Nome do Novo Modelo:</label>
+            <input type="text" id="newModelName" placeholder="Ex: Luminária Extra 200W">
+        </div>
+        <div class="control-group">
+            <label class="ctrl-label">Qtd. Amostras:</label>
+            <input type="number" id="newModelCount" value="3" min="1" style="width: 60px;">
+        </div>
+        <div class="control-group">
+            <button style="background-color: #28a745; color: white;" onclick="addNewModel()">Salvar na Nuvem</button>
+        </div>
+        <div class="control-group">
+            <button style="background-color: #6c757d; color: white;" onclick="toggleAddArea()">Cancelar</button>
+        </div>
+    </div>
+
+    <div class="progress-container">
+        <div class="progress-bar-bg"><div class="progress-fill" id="progressBar"></div></div>
+        <div class="progress-text" id="progressText">0%</div>
+    </div>
+
+    <h2>📅 Fila de Trabalho</h2>
+    <table id="pendingTable">
+        <thead><tr><th style="width: 15%;">Data</th><th style="width: 15%;">Dia</th><th>Amostras</th></tr></thead>
+        <tbody></tbody>
+    </table>
+
+    <h2 style="border-left-color: #6c757d; margin-top: 50px;">✅ Histórico Realizado</h2>
+    <table id="completedTable">
+        <thead><tr><th style="width: 15%;">Realizado em</th><th>Amostra</th><th style="width: 35%;">Observações</th></tr></thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    // --- CONFIGURAÇÃO DO SUPABASE ---
+    // Substitua os valores abaixo pelos do seu projeto Supabase
+    const SUPABASE_URL = 'SUA_URL_AQUI'; 
+    const SUPABASE_KEY = 'SUA_CHAVE_AQUI';
+    
+    const supabase = showConfigWarning() ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const TABLE_NAME = 'cronograma_lab';
+
+    // Lista Base (Plano Original)
+    const baseModelsList = [
+        "IL-MIR 150W_5K", "IL-MIR 80W_5K", "IL-MIR 136W_5K", "IL-MIR 115W_5K", 
+        "IL-MIR 100W_5K", "IL-MIR 70W_5K", "IL-MIR 60W_5K", "IL-MIR_50W_5K", 
+        "IL-MIR 40W 5K", "IL-MIR 30W 5K",
+        "IL-MIR 150W_4K", "IL-MIR 80W_4K", "IL-MIR 136W_4K", "IL-MIR 115W_4K",
+        "IL-MIR 100W 4K", "IL-MIR_70W 4K", "IL-MIR_60W_4K", "IL-MIR_50W_4K",
+        "IL-MIR 40W 4K", "IL-MIR 30W 4K",
+        "IL-MIR 150W_2,7K", "IL-MIR 80W_2,7K", "IL-MIR 136W_2,7K", "IL-MIR 115W_2,7K",
+        "IL-MIR 100W 2,7K", "IL-MIR 70W_2,7K", "IL-MIR 60W 2.7K", "IL-MIR 50W 2,7K",
+        "IL-MIR 40W_2,7K", "IL-MIR 30W_2,7K"
+    ];
+
+    let globalItems = []; // Armazena estado local sincronizado
+
+    // --- INICIALIZAÇÃO ---
+    window.onload = async function() {
+        if (!supabase) return;
+        
+        // Recupera configurações locais de data/meta (isso pode ficar local, cada usuário vê como prefere)
+        const savedStart = localStorage.getItem('fq53_start');
+        document.getElementById('startDate').value = savedStart || new Date().toISOString().split('T')[0];
+        const savedLimit = localStorage.getItem('fq53_limit');
+        if(savedLimit) document.getElementById('dailyLimit').value = savedLimit;
+
+        await fetchAndRender();
+    };
+
+    function showConfigWarning() {
+        if (SUPABASE_URL === 'SUA_URL_AQUI') {
+            document.body.innerHTML = '<div style="padding:50px; text-align:center;"><h1>Configuração Necessária</h1><p>Abra o arquivo HTML no bloco de notas e coloque sua URL e CHAVE do Supabase.</p></div>';
+            return true;
+        }
+        return false;
+    }
+
+    // --- SINCRONIZAÇÃO COM SUPABASE ---
+    async function fetchAndRender() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        
+        // 1. Baixar tudo do Supabase
+        const { data: dbItems, error } = await supabase.from(TABLE_NAME).select('*');
+        
+        if (error) {
+            alert('Erro ao conectar: ' + error.message);
+            document.getElementById('loadingOverlay').style.display = 'none';
+            return;
+        }
+
+        // 2. Mesclar Lista Base com Dados do Banco
+        globalItems = [];
+        const dbMap = new Map(dbItems.map(i => [i.id, i]));
+
+        // Adiciona itens do plano original
+        baseModelsList.forEach((model, mIdx) => {
+            for(let i=1; i<=3; i++) {
+                let id = `chk_${mIdx}_${i}`;
+                let dbData = dbMap.get(id);
+                
+                globalItems.push({
+                    id: id,
+                    model: model,
+                    sampleNum: i,
+                    totalSamples: 3,
+                    isFirst: (i === 1),
+                    isCustom: false,
+                    done: dbData ? dbData.done : false,
+                    doneDate: dbData ? dbData.done_date : null,
+                    obs: dbData ? dbData.obs : ""
+                });
+            }
+        });
+
+        // Adiciona itens CUSTOMIZADOS (que só existem no banco)
+        dbItems.forEach(item => {
+            if (item.is_custom) {
+                globalItems.push({
+                    id: item.id,
+                    model: item.model,
+                    sampleNum: item.sample_num,
+                    totalSamples: item.total_samples,
+                    isFirst: (item.sample_num === 1),
+                    isCustom: true,
+                    done: item.done,
+                    doneDate: item.done_date,
+                    obs: item.obs
+                });
+            }
+        });
+
+        renderApp();
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // --- AÇÕES DO USUÁRIO (Salva no Banco) ---
+    async function toggleCheck(id) {
+        const item = globalItems.find(i => i.id === id);
+        const newState = !item.done;
+        const newDate = newState ? new Date().toISOString().split('T')[0] : null;
+
+        // Atualização Otimista (Visual instantâneo)
+        item.done = newState;
+        item.doneDate = newDate;
+        renderApp();
+
+        // Envio para o Banco
+        const payload = {
+            id: item.id,
+            model: item.model,
+            sample_num: item.sampleNum,
+            total_samples: item.totalSamples,
+            is_custom: item.isCustom,
+            done: newState,
+            done_date: newDate,
+            obs: item.obs
+        };
+
+        const { error } = await supabase.from(TABLE_NAME).upsert(payload);
+        if (error) console.error("Erro ao salvar:", error);
+    }
+
+    async function saveObs(id, text) {
+        const item = globalItems.find(i => i.id === id);
+        item.obs = text; // Local update
+        
+        // Precisamos garantir que o item exista no banco para atualizar obs
+        const payload = {
+            id: item.id,
+            model: item.model,
+            sample_num: item.sampleNum,
+            total_samples: item.totalSamples,
+            is_custom: item.isCustom,
+            done: item.done,
+            done_date: item.doneDate,
+            obs: text
+        };
+        await supabase.from(TABLE_NAME).upsert(payload);
+    }
+
+    async function addNewModel() {
+        const name = document.getElementById('newModelName').value.trim();
+        const count = parseInt(document.getElementById('newModelCount').value);
+        if (!name || count < 1) return alert("Dados inválidos");
+
+        document.getElementById('loadingOverlay').style.display = 'flex';
+        const baseId = 'custom_' + Date.now();
+        
+        // Criar array de inserts
+        const inserts = [];
+        for(let i=1; i<=count; i++) {
+            inserts.push({
+                id: `${baseId}_${i}`,
+                model: name,
+                sample_num: i,
+                total_samples: count,
+                is_custom: true,
+                done: false,
+                done_date: null,
+                obs: ""
+            });
+        }
+
+        const { error } = await supabase.from(TABLE_NAME).insert(inserts);
+        if (error) {
+            alert("Erro ao adicionar: " + error.message);
+        } else {
+            toggleAddArea();
+            document.getElementById('newModelName').value = '';
+            await fetchAndRender(); // Recarrega para puxar os novos
+        }
+        document.getElementById('loadingOverlay').style.display = 'none';
+    }
+
+    // --- LÓGICA DE RENDERIZAÇÃO (Idêntica à v5, mas usando globalItems) ---
+    function renderApp() {
+        const startDateStr = document.getElementById('startDate').value;
+        const limit = parseInt(document.getElementById('dailyLimit').value);
+        
+        localStorage.setItem('fq53_start', startDateStr);
+        localStorage.setItem('fq53_limit', limit);
+
+        if(!startDateStr) return;
+
+        let pendingItems = globalItems.filter(i => !i.done);
+        let completedItems = globalItems.filter(i => i.done);
+        completedItems.sort((a, b) => new Date(b.doneDate || 0) - new Date(a.doneDate || 0));
+
+        // Stats
+        document.getElementById('valTotal').innerText = globalItems.length;
+        document.getElementById('valDone').innerText = completedItems.length;
+        document.getElementById('valRemaining').innerText = pendingItems.length;
+        const pct = globalItems.length > 0 ? Math.round((completedItems.length / globalItems.length) * 100) : 0;
+        document.getElementById('progressBar').style.width = pct + '%';
+        document.getElementById('progressText').innerText = `${pct}% Concluído`;
+
+        // Render Pendentes
+        const pendingTbody = document.querySelector('#pendingTable tbody');
+        pendingTbody.innerHTML = '';
+
+        if (pendingItems.length > 0) {
+            let currentDate = new Date(startDateStr + 'T00:00:00');
+            const today = new Date(); today.setHours(0,0,0,0);
+            let queueIndex = 0;
+
+            while (queueIndex < pendingItems.length) {
+                while (currentDate.getDay() === 0 || currentDate.getDay() === 6) currentDate.setDate(currentDate.getDate() + 1);
+
+                const dateKey = currentDate.toISOString().split('T')[0];
+                const dateKeyBR = currentDate.toLocaleDateString('pt-BR', {day: '2-digit', month: '2-digit'});
+                const isToday = currentDate.getTime() === today.getTime();
+                const isPast = currentDate < today;
+
+                let availableSlots = limit;
+                if (isToday) {
+                    const doneTodayCount = completedItems.filter(item => item.doneDate === dateKey).length;
+                    availableSlots = Math.max(0, limit - doneTodayCount);
+                }
+                if (isPast) availableSlots = 0;
+
+                let dailyBatch = [];
+                for(let k=0; k < availableSlots; k++) {
+                    if(queueIndex < pendingItems.length) {
+                        dailyBatch.push(pendingItems[queueIndex]);
+                        queueIndex++;
+                    }
+                }
+
+                if (dailyBatch.length > 0) {
+                    const tr = document.createElement('tr');
+                    if (isToday) tr.className = "today-row";
+                    const dayLabel = isToday ? '<span class="today-label">HOJE</span>' : ['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][currentDate.getDay()];
+                    
+                    tr.innerHTML = `<td>${dateKeyBR}</td><td>${dayLabel}</td><td>${dailyBatch.map(renderItemHTML).join('')}</td>`;
+                    pendingTbody.appendChild(tr);
+                    document.getElementById('valFinishDate').innerText = dateKeyBR;
+                } else if (isToday && availableSlots === 0 && queueIndex < pendingItems.length) {
+                     const tr = document.createElement('tr'); tr.className = "today-row";
+                     tr.innerHTML = `<td>${dateKeyBR}</td><td class="today-label">HOJE</td><td style="color:#28a745;">✅ Meta atingida!</td>`;
+                     pendingTbody.appendChild(tr);
+                }
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+        } else {
+            document.getElementById('valFinishDate').innerText = "Concluído";
+            pendingTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:green;">🎉 Tudo concluído!</td></tr>';
+        }
+
+        // Render Concluídos
+        const doneTbody = document.querySelector('#completedTable tbody');
+        doneTbody.innerHTML = '';
+        completedItems.forEach(item => {
+            const tr = document.createElement('tr'); tr.className = 'completed-row';
+            tr.innerHTML = `
+                <td>${item.doneDate ? new Date(item.doneDate).toLocaleDateString('pt-BR') : '-'}</td>
+                <td>
+                    <div class="checklist-item" style="cursor:default; border:none; padding:0;">
+                        <div class="item-header">
+                            <input type="checkbox" checked onchange="toggleCheck('${item.id}')">
+                            <span class="model-info">${item.model}</span>
+                            <span class="tags"><span class="tag tag-sample">${item.sampleNum}/${item.totalSamples}</span></span>
+                        </div>
+                    </div>
+                </td>
+                <td><input type="text" class="obs-input" value="${item.obs}" onchange="saveObs('${item.id}', this.value)"></td>
+            `;
+            doneTbody.appendChild(tr);
+        });
+    }
+
+    function renderItemHTML(item) {
+        let badges = `<span class="tag tag-sample">Amostra ${item.sampleNum}/${item.totalSamples}</span>`;
+        if (item.isFirst && !item.isCustom) badges += ` <span class="tag tag-new">Novo Modelo</span>`;
+        if (item.isCustom) badges += ` <span class="tag tag-extra">Extra</span>`;
+        return `
+        <div class="checklist-item" onclick="if(event.target.tagName!=='INPUT') toggleCheck('${item.id}')">
+            <div class="item-header">
+                <input type="checkbox" ${item.done ? 'checked' : ''} onclick="event.stopPropagation(); toggleCheck('${item.id}')">
+                <span class="model-info">${item.model}</span>
+                <span class="tags">${badges}</span>
+            </div>
+            <input type="text" class="obs-input" placeholder="Obs..." value="${item.obs}" onclick="event.stopPropagation()" onchange="saveObs('${item.id}', this.value)">
+        </div>`;
+    }
+
+    function toggleAddArea() { document.getElementById('addArea').classList.toggle('visible'); }
+</script>
+
+</body>
+</html>
