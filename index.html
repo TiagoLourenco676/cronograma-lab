@@ -3,37 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cronograma Lab FQ-053 (Online)</title>
+    <title>Cronograma Lab FQ-053 (Cloud)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --primary: #0056b3; --success: #28a745; --info: #17a2b8; --bg: #f8f9fa; --card: #ffffff; --border: #dee2e6; }
+        :root { --primary: #0056b3; --success: #28a745; --info: #17a2b8; --bg: #f4f6f8; --card: #ffffff; --border: #dde2e6; }
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        .container { max-width: 1100px; margin: 0 auto; background: var(--card); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
         
         /* Loading Overlay */
-        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.8); z-index: 999; display: flex; justify-content: center; align-items: center; font-size: 1.5rem; color: var(--primary); font-weight: bold; }
+        #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1.2rem; color: var(--primary); font-weight: bold; }
 
         header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
-        h1 { margin: 0; color: var(--primary); font-size: 1.6rem; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; letter-spacing: -0.5px; }
         
         .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .dash-val { display: block; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
-        .dash-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: 600; }
+        .dash-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .dash-val { display: block; font-size: 1.8rem; font-weight: 700; color: var(--primary); }
+        .dash-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: 600; letter-spacing: 0.5px; }
 
         .controls { background: #e9ecef; padding: 20px; border-radius: 8px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 30px; }
         .control-group { display: flex; flex-direction: column; }
         label.ctrl-label { font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; color: #495057; }
-        input { padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
+        input { padding: 10px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
         
         button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
-        .btn-update { background: var(--primary); color: white; }
-        .btn-update:hover { background: #004494; }
         .btn-add { background: var(--info); color: white; }
         .btn-add:hover { background: #138496; }
+        .btn-reload { background: #6c757d; color: white; }
+        .btn-reload:hover { background: #5a6268; }
 
-        .add-area { background: #d1ecf1; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #bee5eb; }
+        .add-area { background: #d1ecf1; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #bee5eb; animation: fadeIn 0.3s; }
         .add-area.visible { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .progress-container { margin-bottom: 30px; }
         .progress-bar-bg { background: #e9ecef; height: 16px; border-radius: 8px; overflow: hidden; }
@@ -45,7 +46,7 @@
         th { background: var(--primary); color: white; padding: 12px 15px; text-align: left; }
         td { padding: 12px 15px; border-bottom: 1px solid var(--border); vertical-align: top; }
         
-        .checklist-item { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 6px; transition: background 0.1s; border: 1px solid transparent; cursor: pointer; }
+        .checklist-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 6px; transition: background 0.1s; border: 1px solid transparent; cursor: pointer; margin-bottom: 5px; }
         .checklist-item:hover { background-color: #f1f3f5; border-color: #e9ecef; }
         .item-header { display: flex; align-items: center; width: 100%; }
         input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--success); margin: 0 12px 0 0; }
@@ -55,7 +56,7 @@
         .tag-sample { background: #e2e6ea; color: #495057; }
         .tag-new { background: var(--success); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-extra { background: var(--info); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
-        .obs-input { width: 96%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; color: #555; margin-left: 34px; background: #fff; }
+        .obs-input { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; color: #555; margin-left: 34px; background: #fff; }
         
         .completed-row { background: #fafafa; opacity: 0.8; }
         .completed-row .model-info { text-decoration: line-through; color: #999; }
@@ -67,15 +68,18 @@
 </head>
 <body>
 
-<div id="loadingOverlay">Carregando dados...</div>
+<div id="loadingOverlay">
+    <div>Conectando ao Laboratório...</div>
+    <div style="font-size:0.8rem; font-weight:normal; margin-top:10px;">Sincronizando dados</div>
+</div>
 
 <div class="container">
     <header>
         <div>
-            <h1>Lab FQ-053 <span style="font-size:0.6em; background:#28a745; color:white; padding:2px 6px; border-radius:4px; vertical-align:middle;">ONLINE</span></h1>
-            <div style="color:#666; margin-top:5px;">Processo 2024Ele278 | Sincronizado com Supabase</div>
+            <h1>Lab FQ-053 <span style="font-size:0.5em; background:#28a745; color:white; padding:4px 8px; border-radius:4px; vertical-align:middle; letter-spacing:0.5px;">ONLINE</span></h1>
+            <div style="color:#666; margin-top:5px;">Processo 2024Ele278 | Base de Dados Centralizada</div>
         </div>
-        <button onclick="location.reload()" style="background:#6c757d; color:white;">🔄 Recarregar Dados</button>
+        <button class="btn-reload" onclick="location.reload()">🔄 Sincronizar Agora</button>
     </header>
 
     <div class="dashboard">
@@ -109,10 +113,10 @@
             <input type="number" id="newModelCount" value="3" min="1" style="width: 60px;">
         </div>
         <div class="control-group">
-            <button style="background-color: #28a745; color: white;" onclick="addNewModel()">Salvar na Nuvem</button>
+            <button style="background-color: #28a745; color: white; padding: 10px 20px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="addNewModel()">Salvar na Nuvem</button>
         </div>
         <div class="control-group">
-            <button style="background-color: #6c757d; color: white;" onclick="toggleAddArea()">Cancelar</button>
+            <button style="background-color: #dc3545; color: white; padding: 10px 20px; border:none; border-radius:4px; font-weight:bold; cursor:pointer;" onclick="toggleAddArea()">Cancelar</button>
         </div>
     </div>
 
@@ -135,12 +139,15 @@
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO DO SUPABASE ---
-    // Substitua os valores abaixo pelos do seu projeto Supabase
-    const SUPABASE_URL = 'SUA_URL_AQUI'; 
-    const SUPABASE_KEY = 'SUA_CHAVE_AQUI';
+    // ==========================================
+    // ⚠️ ÁREA DE CONFIGURAÇÃO (COLE SUAS CHAVES AQUI)
+    // ==========================================
+    const SUPABASE_URL = 'COLE_SUA_URL_AQUI'; 
+    const SUPABASE_KEY = 'COLE_SUA_CHAVE_ANON_AQUI';
+    // ==========================================
     
-    const supabase = showConfigWarning() ? null : supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    // Inicialização
+    let supabase = null;
     const TABLE_NAME = 'cronograma_lab';
 
     // Lista Base (Plano Original)
@@ -156,13 +163,19 @@
         "IL-MIR 40W_2,7K", "IL-MIR 30W_2,7K"
     ];
 
-    let globalItems = []; // Armazena estado local sincronizado
+    let globalItems = [];
 
-    // --- INICIALIZAÇÃO ---
     window.onload = async function() {
-        if (!supabase) return;
-        
-        // Recupera configurações locais de data/meta (isso pode ficar local, cada usuário vê como prefere)
+        // Validação simples
+        if(SUPABASE_URL.includes('COLE_SUA_URL') || SUPABASE_KEY.includes('COLE_SUA_CHAVE')) {
+            document.body.innerHTML = '<div style="padding:50px; text-align:center; font-family:sans-serif; background:#fff3cd; border:1px solid #ffeeba;"><h1>⚠️ Faltam as Chaves de Acesso</h1><p>Abra o arquivo <b>index.html</b> no Bloco de Notas e cole a URL e a KEY do Supabase nas linhas 137 e 138.</p></div>';
+            return;
+        }
+
+        // Conecta ao Supabase
+        supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // Carrega configs locais
         const savedStart = localStorage.getItem('fq53_start');
         document.getElementById('startDate').value = savedStart || new Date().toISOString().split('T')[0];
         const savedLimit = localStorage.getItem('fq53_limit');
@@ -171,32 +184,22 @@
         await fetchAndRender();
     };
 
-    function showConfigWarning() {
-        if (SUPABASE_URL === 'SUA_URL_AQUI') {
-            document.body.innerHTML = '<div style="padding:50px; text-align:center;"><h1>Configuração Necessária</h1><p>Abra o arquivo HTML no bloco de notas e coloque sua URL e CHAVE do Supabase.</p></div>';
-            return true;
-        }
-        return false;
-    }
-
-    // --- SINCRONIZAÇÃO COM SUPABASE ---
+    // --- COMUNICAÇÃO COM O BANCO ---
     async function fetchAndRender() {
         document.getElementById('loadingOverlay').style.display = 'flex';
         
-        // 1. Baixar tudo do Supabase
         const { data: dbItems, error } = await supabase.from(TABLE_NAME).select('*');
         
         if (error) {
-            alert('Erro ao conectar: ' + error.message);
+            alert('Erro ao conectar no banco: ' + error.message);
             document.getElementById('loadingOverlay').style.display = 'none';
             return;
         }
 
-        // 2. Mesclar Lista Base com Dados do Banco
         globalItems = [];
         const dbMap = new Map(dbItems.map(i => [i.id, i]));
 
-        // Adiciona itens do plano original
+        // 1. Processa Itens do Plano Base
         baseModelsList.forEach((model, mIdx) => {
             for(let i=1; i<=3; i++) {
                 let id = `chk_${mIdx}_${i}`;
@@ -216,7 +219,7 @@
             }
         });
 
-        // Adiciona itens CUSTOMIZADOS (que só existem no banco)
+        // 2. Processa Itens Extras
         dbItems.forEach(item => {
             if (item.is_custom) {
                 globalItems.push({
@@ -237,18 +240,17 @@
         document.getElementById('loadingOverlay').style.display = 'none';
     }
 
-    // --- AÇÕES DO USUÁRIO (Salva no Banco) ---
     async function toggleCheck(id) {
         const item = globalItems.find(i => i.id === id);
         const newState = !item.done;
         const newDate = newState ? new Date().toISOString().split('T')[0] : null;
 
-        // Atualização Otimista (Visual instantâneo)
+        // Atualização Otimista
         item.done = newState;
         item.doneDate = newDate;
         renderApp();
 
-        // Envio para o Banco
+        // Envia para o Supabase
         const payload = {
             id: item.id,
             model: item.model,
@@ -261,14 +263,13 @@
         };
 
         const { error } = await supabase.from(TABLE_NAME).upsert(payload);
-        if (error) console.error("Erro ao salvar:", error);
+        if (error) console.error("Erro de salvamento:", error);
     }
 
     async function saveObs(id, text) {
         const item = globalItems.find(i => i.id === id);
-        item.obs = text; // Local update
+        item.obs = text; 
         
-        // Precisamos garantir que o item exista no banco para atualizar obs
         const payload = {
             id: item.id,
             model: item.model,
@@ -285,12 +286,11 @@
     async function addNewModel() {
         const name = document.getElementById('newModelName').value.trim();
         const count = parseInt(document.getElementById('newModelCount').value);
-        if (!name || count < 1) return alert("Dados inválidos");
+        if (!name || count < 1) return alert("Preencha os dados corretamente.");
 
         document.getElementById('loadingOverlay').style.display = 'flex';
         const baseId = 'custom_' + Date.now();
         
-        // Criar array de inserts
         const inserts = [];
         for(let i=1; i<=count; i++) {
             inserts.push({
@@ -311,12 +311,12 @@
         } else {
             toggleAddArea();
             document.getElementById('newModelName').value = '';
-            await fetchAndRender(); // Recarrega para puxar os novos
+            await fetchAndRender();
         }
         document.getElementById('loadingOverlay').style.display = 'none';
     }
 
-    // --- LÓGICA DE RENDERIZAÇÃO (Idêntica à v5, mas usando globalItems) ---
+    // --- LÓGICA DE RENDERIZAÇÃO ---
     function renderApp() {
         const startDateStr = document.getElementById('startDate').value;
         const limit = parseInt(document.getElementById('dailyLimit').value);
@@ -338,7 +338,7 @@
         document.getElementById('progressBar').style.width = pct + '%';
         document.getElementById('progressText').innerText = `${pct}% Concluído`;
 
-        // Render Pendentes
+        // Renderiza Tabela Pendente
         const pendingTbody = document.querySelector('#pendingTable tbody');
         pendingTbody.innerHTML = '';
 
@@ -380,17 +380,17 @@
                     document.getElementById('valFinishDate').innerText = dateKeyBR;
                 } else if (isToday && availableSlots === 0 && queueIndex < pendingItems.length) {
                      const tr = document.createElement('tr'); tr.className = "today-row";
-                     tr.innerHTML = `<td>${dateKeyBR}</td><td class="today-label">HOJE</td><td style="color:#28a745;">✅ Meta atingida!</td>`;
+                     tr.innerHTML = `<td>${dateKeyBR}</td><td class="today-label">HOJE</td><td style="color:#28a745;">✅ Meta do dia atingida!</td>`;
                      pendingTbody.appendChild(tr);
                 }
                 currentDate.setDate(currentDate.getDate() + 1);
             }
         } else {
             document.getElementById('valFinishDate').innerText = "Concluído";
-            pendingTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:green;">🎉 Tudo concluído!</td></tr>';
+            pendingTbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:30px; color:green; font-weight:bold;">🎉 Cronograma Finalizado!</td></tr>';
         }
 
-        // Render Concluídos
+        // Renderiza Tabela Concluídos
         const doneTbody = document.querySelector('#completedTable tbody');
         doneTbody.innerHTML = '';
         completedItems.forEach(item => {
@@ -398,7 +398,7 @@
             tr.innerHTML = `
                 <td>${item.doneDate ? new Date(item.doneDate).toLocaleDateString('pt-BR') : '-'}</td>
                 <td>
-                    <div class="checklist-item" style="cursor:default; border:none; padding:0;">
+                    <div class="checklist-item" style="cursor:default; border:none; padding:0; background:transparent;">
                         <div class="item-header">
                             <input type="checkbox" checked onchange="toggleCheck('${item.id}')">
                             <span class="model-info">${item.model}</span>
@@ -416,6 +416,7 @@
         let badges = `<span class="tag tag-sample">Amostra ${item.sampleNum}/${item.totalSamples}</span>`;
         if (item.isFirst && !item.isCustom) badges += ` <span class="tag tag-new">Novo Modelo</span>`;
         if (item.isCustom) badges += ` <span class="tag tag-extra">Extra</span>`;
+        
         return `
         <div class="checklist-item" onclick="if(event.target.tagName!=='INPUT') toggleCheck('${item.id}')">
             <div class="item-header">
@@ -423,7 +424,7 @@
                 <span class="model-info">${item.model}</span>
                 <span class="tags">${badges}</span>
             </div>
-            <input type="text" class="obs-input" placeholder="Obs..." value="${item.obs}" onclick="event.stopPropagation()" onchange="saveObs('${item.id}', this.value)">
+            <input type="text" class="obs-input" placeholder="Adicionar observação..." value="${item.obs}" onclick="event.stopPropagation()" onchange="saveObs('${item.id}', this.value)">
         </div>`;
     }
 
