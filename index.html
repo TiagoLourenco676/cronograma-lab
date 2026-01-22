@@ -14,17 +14,17 @@
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; font-size: 1.2rem; color: var(--primary); font-weight: bold; }
 
         header { border-bottom: 2px solid #eee; padding-bottom: 20px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;}
-        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; letter-spacing: -0.5px; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.6rem; }
         
         .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 25px; }
-        .dash-card { background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-        .dash-val { display: block; font-size: 1.8rem; font-weight: 700; color: var(--primary); }
-        .dash-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: 600; letter-spacing: 0.5px; }
+        .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .dash-val { display: block; font-size: 1.6rem; font-weight: bold; color: var(--primary); }
+        .dash-label { font-size: 0.75rem; text-transform: uppercase; color: #666; font-weight: 600; }
 
         .controls { background: #e9ecef; padding: 20px; border-radius: 8px; display: flex; gap: 20px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 30px; }
         .control-group { display: flex; flex-direction: column; }
         label.ctrl-label { font-weight: 600; font-size: 0.8rem; margin-bottom: 6px; color: #495057; }
-        input { padding: 10px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
+        input { padding: 8px 12px; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.95rem; }
         
         button { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; transition: 0.2s; font-size: 0.9rem; display: flex; align-items: center; gap: 8px; }
         .btn-add { background: var(--info); color: white; }
@@ -32,9 +32,8 @@
         .btn-reload { background: #6c757d; color: white; }
         .btn-reload:hover { background: #5a6268; }
 
-        .add-area { background: #d1ecf1; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #bee5eb; animation: fadeIn 0.3s; }
+        .add-area { background: #d1ecf1; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; border: 1px solid #bee5eb; }
         .add-area.visible { display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
         .progress-container { margin-bottom: 30px; }
         .progress-bar-bg { background: #e9ecef; height: 16px; border-radius: 8px; overflow: hidden; }
@@ -46,7 +45,7 @@
         th { background: var(--primary); color: white; padding: 12px 15px; text-align: left; }
         td { padding: 12px 15px; border-bottom: 1px solid var(--border); vertical-align: top; }
         
-        .checklist-item { display: flex; flex-direction: column; gap: 8px; padding: 10px; border-radius: 6px; transition: background 0.1s; border: 1px solid transparent; cursor: pointer; margin-bottom: 5px; }
+        .checklist-item { display: flex; flex-direction: column; gap: 8px; padding: 8px; border-radius: 6px; transition: background 0.1s; border: 1px solid transparent; cursor: pointer; margin-bottom: 5px; }
         .checklist-item:hover { background-color: #f1f3f5; border-color: #e9ecef; }
         .item-header { display: flex; align-items: center; width: 100%; }
         input[type="checkbox"] { width: 22px; height: 22px; cursor: pointer; accent-color: var(--success); margin: 0 12px 0 0; }
@@ -56,7 +55,7 @@
         .tag-sample { background: #e2e6ea; color: #495057; }
         .tag-new { background: var(--success); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
         .tag-extra { background: var(--info); color: white; text-transform: uppercase; letter-spacing: 0.5px; }
-        .obs-input { width: 95%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; color: #555; margin-left: 34px; background: #fff; }
+        .obs-input { width: 96%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem; color: #555; margin-left: 34px; background: #fff; }
         
         .completed-row { background: #fafafa; opacity: 0.8; }
         .completed-row .model-info { text-decoration: line-through; color: #999; }
@@ -140,14 +139,14 @@
 
 <script>
     // ==========================================
-    // ⚠️ ÁREA DE CONFIGURAÇÃO (COLE SUAS CHAVES AQUI)
+    // ⚠️ ÁREA DE CONFIGURAÇÃO (JÁ PREENCHIDA)
     // ==========================================
     const SUPABASE_URL = 'https://uzftppvvshpyoejmptjm.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6ZnRwcHZ2c2hweW9lam1wdGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1ODU4NjgsImV4cCI6MjA4NDE2MTg2OH0.lnB46eC4dwQpRYdeJreNLu8vOMGED2GOBLOoO3vnPIs';
     // ==========================================
     
-    // Inicialização
-    let supabase = null;
+    // Variável renomeada para evitar conflito com a biblioteca
+    let labDB = null;
     const TABLE_NAME = 'cronograma_lab';
 
     // Lista Base (Plano Original)
@@ -166,14 +165,14 @@
     let globalItems = [];
 
     window.onload = async function() {
-        // Validação simples
-        if(SUPABASE_URL.includes('COLE_SUA_URL') || SUPABASE_KEY.includes('COLE_SUA_CHAVE')) {
-            document.body.innerHTML = '<div style="padding:50px; text-align:center; font-family:sans-serif; background:#fff3cd; border:1px solid #ffeeba;"><h1>⚠️ Faltam as Chaves de Acesso</h1><p>Abra o arquivo <b>index.html</b> no Bloco de Notas e cole a URL e a KEY do Supabase nas linhas 137 e 138.</p></div>';
+        // Inicializa a conexão usando o namespace global 'window.supabase'
+        // para garantir que a biblioteca carregou corretamente
+        if (window.supabase) {
+            labDB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } else {
+            alert("Erro ao carregar biblioteca Supabase. Verifique sua conexão.");
             return;
         }
-
-        // Conecta ao Supabase
-        supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // Carrega configs locais
         const savedStart = localStorage.getItem('fq53_start');
@@ -188,7 +187,8 @@
     async function fetchAndRender() {
         document.getElementById('loadingOverlay').style.display = 'flex';
         
-        const { data: dbItems, error } = await supabase.from(TABLE_NAME).select('*');
+        // Usa labDB em vez de supabase
+        const { data: dbItems, error } = await labDB.from(TABLE_NAME).select('*');
         
         if (error) {
             alert('Erro ao conectar no banco: ' + error.message);
@@ -262,7 +262,7 @@
             obs: item.obs
         };
 
-        const { error } = await supabase.from(TABLE_NAME).upsert(payload);
+        const { error } = await labDB.from(TABLE_NAME).upsert(payload);
         if (error) console.error("Erro de salvamento:", error);
     }
 
@@ -280,7 +280,7 @@
             done_date: item.doneDate,
             obs: text
         };
-        await supabase.from(TABLE_NAME).upsert(payload);
+        await labDB.from(TABLE_NAME).upsert(payload);
     }
 
     async function addNewModel() {
@@ -305,7 +305,7 @@
             });
         }
 
-        const { error } = await supabase.from(TABLE_NAME).insert(inserts);
+        const { error } = await labDB.from(TABLE_NAME).insert(inserts);
         if (error) {
             alert("Erro ao adicionar: " + error.message);
         } else {
