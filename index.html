@@ -72,6 +72,12 @@
         
         .obs-input { width: 95%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; color: #555; }
 
+        /* STATUS BADGES FOR PERFORMANCE */
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
+        .badge-ok { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+
         /* LOADING */
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
@@ -93,7 +99,7 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-flask"></i> Lab FQ-053 <span style="font-size:0.6em; background:#28a745; color:white; padding:2px 6px; border-radius:4px;">V10.0</span></h1>
+        <h1><i class="fas fa-flask"></i> Lab FQ-053 <span style="font-size:0.6em; background:#28a745; color:white; padding:2px 6px; border-radius:4px;">V10.1</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -152,15 +158,25 @@
 
     <div id="tab-performance" class="tab-content">
         <div class="dashboard">
-            <div class="dash-card"><span class="dash-val" id="perfAvg">--</span><span class="dash-label">Média/Dia</span></div>
-            <div class="dash-card"><span class="dash-val" id="perfEff">--%</span><span class="dash-label">Eficiência</span></div>
+            <div class="dash-card"><span class="dash-val" id="perfAvg">--</span><span class="dash-label">Média Real (Amostras/Dia)</span></div>
+            <div class="dash-card"><span class="dash-val" id="perfEff">--%</span><span class="dash-label">Eficiência Global</span></div>
         </div>
-        <div style="background:white; padding:20px; border:1px solid #ddd; border-radius:8px; margin-top:20px;">
-            <canvas id="perfChart" height="100"></canvas>
+        
+        <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-top:20px;">
+             <div style="background:white; padding:20px; border:1px solid #ddd; border-radius:8px;">
+                <h4 style="margin-top:0;">Evolução Diária</h4>
+                <canvas id="perfChart" height="150"></canvas>
+            </div>
+            <div style="background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba; font-size:0.9rem;">
+                <h4 style="margin-top:0; color:#856404;">📝 Instruções</h4>
+                <p>Se a barra do gráfico estiver abaixo da linha verde, significa que a meta não foi atingida.</p>
+                <p>Use a tabela abaixo para justificar os atrasos (Ex: "Feriado", "Manutenção").</p>
+            </div>
         </div>
+
         <h3 style="margin-top:30px;">Diário de Ocorrências</h3>
         <table class="log-table">
-            <thead><tr><th>Data</th><th>Meta</th><th>Feito</th><th>Status</th><th>Justificativa</th></tr></thead>
+            <thead><tr><th>Data</th><th>Meta</th><th>Feito</th><th>Status</th><th>Justificativa (Digitar para Salvar)</th></tr></thead>
             <tbody id="logTableBody"></tbody>
         </table>
     </div>
@@ -191,6 +207,7 @@
     let labDB = null;
     let globalItems = [];
     let globalLogs = new Map();
+    let performanceChart = null;
     const TABLE_MAIN = 'cronograma_lab';
     const TABLE_LOGS = 'daily_logs';
 
@@ -243,6 +260,7 @@
         (logs||[]).forEach(l => globalLogs.set(l.date, l.obs));
 
         renderApp();
+        renderPerformance(); // Prepara os dados do gráfico
         document.getElementById('loadingOverlay').style.display = 'none';
     }
 
@@ -349,11 +367,121 @@
         });
     }
 
+    // --- LÓGICA DE PERFORMANCE (RESTAURADA) ---
+    function renderPerformance() {
+        const startStr = document.getElementById('startDate').value;
+        const limit = parseInt(document.getElementById('dailyLimit').value);
+        const today = new Date(); today.setHours(0,0,0,0);
+        let loopDate = new Date(startStr + 'T00:00:00');
+        
+        const daysData = [];
+        let totalDone = 0;
+        let daysCounted = 0;
+
+        while(loopDate <= today) {
+            // Pula FDS no gráfico
+            if(loopDate.getDay() !== 0 && loopDate.getDay() !== 6) {
+                const dateKey = loopDate.toISOString().split('T')[0];
+                const count = globalItems.filter(i => i.doneDate === dateKey).length;
+                const log = globalLogs.get(dateKey) || "";
+                
+                daysData.push({
+                    date: dateKey,
+                    dateObj: new Date(loopDate),
+                    count: count,
+                    target: limit,
+                    log: log,
+                    status: count >= limit ? 'ok' : (count > 0 ? 'warning' : 'danger')
+                });
+
+                if(loopDate < today) { 
+                    totalDone += count;
+                    daysCounted++;
+                }
+            }
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        // KPIs
+        const avg = daysCounted > 0 ? (totalDone / daysCounted).toFixed(1) : "0.0";
+        document.getElementById('perfAvg').innerText = avg;
+        const efficiency = daysCounted > 0 ? Math.round((avg / limit) * 100) : 0;
+        document.getElementById('perfEff').innerText = efficiency + "%";
+
+        // Tabela Diário
+        const logBody = document.getElementById('logTableBody');
+        logBody.innerHTML = '';
+        
+        [...daysData].reverse().forEach(d => {
+            const isToday = d.dateObj.getTime() === today.getTime();
+            let statusBadge = '';
+            let rowStyle = '';
+            
+            if(isToday) statusBadge = `<span class="badge badge-warning">Em Andamento</span>`;
+            else if (d.count >= d.target) statusBadge = `<span class="badge badge-ok">Meta Batida</span>`;
+            else {
+                statusBadge = `<span class="badge badge-danger">Abaixo da Meta</span>`;
+                if(!d.log) rowStyle = 'background-color: #fff5f5;'; 
+            }
+
+            const tr = document.createElement('tr');
+            tr.style = rowStyle;
+            tr.innerHTML = `
+                <td>${d.dateObj.toLocaleDateString('pt-BR')} ${isToday?'(Hoje)':''}</td>
+                <td>${d.target}</td>
+                <td style="font-weight:bold; font-size:1.1em;">${d.count}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <input type="text" class="obs-input" 
+                           placeholder="${d.count < d.target ? '⚠️ Justifique o atraso...' : 'Observações...'}" 
+                           value="${d.log}" 
+                           onchange="saveLog('${d.date}', this.value)">
+                </td>
+            `;
+            logBody.appendChild(tr);
+        });
+
+        updateChart(daysData);
+    }
+
+    function updateChart(data) {
+        const ctx = document.getElementById('perfChart').getContext('2d');
+        if(performanceChart) performanceChart.destroy();
+
+        const recentData = data.slice(-14); // Últimos 14 dias
+
+        performanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: recentData.map(d => d.dateObj.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})),
+                datasets: [
+                    {
+                        label: 'Realizado',
+                        data: recentData.map(d => d.count),
+                        backgroundColor: '#0056b3',
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Meta',
+                        data: recentData.map(d => d.target),
+                        type: 'line',
+                        borderColor: '#28a745',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+    }
+
     // --- FUNÇÕES DE EXPORTAÇÃO ---
-    
     function exportExcel() {
         if(globalItems.filter(i=>i.done).length === 0) { alert("Nada realizado para exportar."); return; }
-        
         const wb = XLSX.utils.book_new();
         
         // Aba 1: Realizados
@@ -384,24 +512,16 @@
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
         
-        // Cabeçalho
-        doc.setFontSize(18);
-        doc.setTextColor(0, 86, 179);
+        doc.setFontSize(18); doc.setTextColor(0, 86, 179);
         doc.text("Relatório de Ensaios - Lab FQ-053", 14, 20);
         
-        doc.setFontSize(10);
-        doc.setTextColor(100);
+        doc.setFontSize(10); doc.setTextColor(100);
         doc.text(`Processo: 2024Ele278 | Gerado em: ${new Date().toLocaleDateString()}`, 14, 28);
 
-        // Resumo
         const total = globalItems.length;
         const done = globalItems.filter(i => i.done).length;
-        const pending = total - done;
-        const percent = Math.round((done/total)*100);
-        
-        doc.text(`Resumo: ${done} Concluídos | ${pending} Pendentes | ${percent}% Progresso`, 14, 35);
+        doc.text(`Resumo: ${done} Concluídos | ${total - done} Pendentes`, 14, 35);
 
-        // Tabela
         const tableData = globalItems.filter(i => i.done).map(i => [
             i.doneDate ? new Date(i.doneDate).toLocaleDateString('pt-BR') : "-",
             i.model,
@@ -420,13 +540,13 @@
         doc.save("Relatorio_Lab_FQ053.pdf");
     }
 
-    // --- AÇÕES DO USUÁRIO ---
+    // --- AÇÕES DB ---
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
         const newState = !item.done;
         const newDate = newState ? new Date().toISOString().split('T')[0] : null;
         item.done = newState; item.doneDate = newDate;
-        renderApp();
+        renderApp(); renderPerformance();
         await dbUpsert(item);
     }
 
@@ -441,7 +561,7 @@
         const item = globalItems.find(i => i.id === id);
         if(!newDate) return;
         item.doneDate = newDate;
-        renderApp();
+        renderApp(); renderPerformance();
         await dbUpsert(item);
     }
 
@@ -451,10 +571,15 @@
         await dbUpsert(item);
     }
 
+    async function saveLog(date, text) {
+        globalLogs.set(date, text);
+        const { error } = await labDB.from(TABLE_LOGS).upsert({ date: date, obs: text });
+    }
+
     async function deleteItem(id) {
         if(!confirm("Excluir modelo extra?")) return;
         globalItems = globalItems.filter(i => i.id !== id);
-        renderApp();
+        renderApp(); renderPerformance();
         await labDB.from(TABLE_MAIN).delete().eq('id', id);
     }
 
@@ -487,21 +612,6 @@
             await labDB.from(TABLE_LOGS).delete().neq('date', '0');
             location.reload();
         }
-    }
-
-    function renderPerformance() {
-        // Mock rápido de performance para a aba
-        const tbody = document.getElementById('logTableBody');
-        tbody.innerHTML = '';
-        // (Lógica completa igual à versão V8 está implícita para economizar espaço visual)
-        // Se precisar da lógica completa de performance aqui, posso reinserir.
-        // Por padrão, mantive a estrutura visual da aba.
-        
-        // Simples loop para popular a tabela de logs se houver dados
-        globalLogs.forEach((obs, date) => {
-             const row = `<tr><td>${new Date(date).toLocaleDateString()}</td><td>-</td><td>-</td><td>-</td><td>${obs}</td></tr>`;
-             tbody.innerHTML += row;
-        });
     }
 </script>
 
