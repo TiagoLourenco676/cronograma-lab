@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ocupação e histórico Advanced Labs</title>
+    <title>Ocupação e Histórico Advanced Labs</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,11 +17,9 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1250px; margin: 0 auto; background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
         
-        /* HEADER */
         header { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         h1 { margin: 0; color: var(--primary); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* TABS */
         .tab-menu { display: flex; gap: 5px; background: #e9ecef; padding: 5px; border-radius: 8px; }
         .tab-btn { padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: 6px; font-weight: 600; color: #666; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .tab-btn:hover { background: rgba(255,255,255,0.5); }
@@ -30,18 +28,15 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        /* DASHBOARD GRID */
         .dashboard-grid { display: grid; grid-template-columns: 200px 200px 1fr; gap: 15px; margin-bottom: 25px; }
         .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .dash-val { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
         .dash-label { font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 700; margin-top: 5px; }
         
-        /* PREVISÃO POR PROCESSO */
         .process-forecast-container { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 120px; overflow-y: auto; }
         .forecast-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--info); font-size: 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .forecast-date { font-weight: bold; color: var(--primary); }
 
-        /* CONTROLS */
         .controls { background: #e9ecef; padding: 15px; border-radius: 8px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; margin-bottom: 20px; }
         .control-group { display: flex; flex-direction: column; }
         label { font-size: 0.75rem; font-weight: 700; color: #555; margin-bottom: 4px; }
@@ -54,12 +49,10 @@
         .btn-danger { background: var(--danger); color: white; }
         .btn-manage { background: #6c757d; color: white; }
 
-        /* TABLES */
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; font-size: 0.9rem; }
         th { background: var(--primary); color: white; padding: 12px; text-align: left; position: sticky; top: 0; }
         td { padding: 10px; border-bottom: 1px solid var(--border); vertical-align: middle; }
         
-        /* ITEM CARDS */
         .checklist-item { display: flex; align-items: center; gap: 12px; padding: 10px; background: white; border: 1px solid #eee; border-radius: 6px; transition: 0.2s; margin-bottom: 4px; }
         .checklist-item:hover { border-color: #beccdb; background: #f8f9fa; }
         .checklist-item.priority { border-left: 4px solid var(--warning); background: #fffdf5; }
@@ -67,12 +60,10 @@
         .item-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--success); }
         .item-title { font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; }
         .item-meta { font-size: 0.75rem; color: #666; margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; }
-        
         .tag { padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; text-transform: uppercase; }
         .tag-sample { background: #e2e6ea; color: #555; }
         .tag-process { background: #cff4fc; color: #055160; border: 1px solid #b6effb; }
         
-        /* FAIL STATE */
         .failed-row { background-color: #ffeaea !important; }
         .failed-row td { color: #721c24; }
         .btn-fail { color: #dc3545; background: none; border: 1px solid #dc3545; border-radius: 4px; padding: 2px 6px; font-size: 0.8rem; cursor: pointer; }
@@ -82,12 +73,10 @@
         input.date-edit:focus { outline: none; border-bottom: 2px solid var(--primary); background: #fff; }
         .obs-input { width: 95%; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; color: #555; }
 
-        /* LOADING */
         #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.95); z-index: 999; display: flex; flex-direction: column; justify-content: center; align-items: center; }
         .spinner { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-        /* MODALS */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:1000; }
         .modal { background:white; padding:25px; border-radius:8px; width:90%; max-width:500px; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
@@ -107,7 +96,7 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V13.0</span></h1>
+        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V13.1</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -223,12 +212,8 @@
 </div>
 
 <script>
-    // ==========================================
-    // ⚠️ CONFIGURAÇÃO DO SUPABASE
-    // ==========================================
     const SUPABASE_URL = 'https://uzftppvvshpyoejmptjm.supabase.co'; 
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6ZnRwcHZ2c2hweW9lam1wdGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1ODU4NjgsImV4cCI6MjA4NDE2MTg2OH0.lnB46eC4dwQpRYdeJreNLu8vOMGED2GOBLOoO3vnPIs';
-    // ==========================================
 
     let labDB = null;
     let globalItems = [];
@@ -244,12 +229,9 @@
     ];
 
     window.onload = async function() {
-        if(SUPABASE_URL.includes('COLE_SUA_URL')) { alert("Configure as chaves!"); return; }
         labDB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        
         document.getElementById('startDate').value = localStorage.getItem('fq53_start') || new Date().toISOString().split('T')[0];
         document.getElementById('dailyLimit').value = localStorage.getItem('fq53_limit') || 4;
-
         await fetchData();
     };
 
@@ -280,7 +262,6 @@
 
         (items||[]).forEach(item => {
             if (item.is_custom && !item.is_deleted) {
-                // Se for um item de falha (cópia), ele aparece na lista como custom também
                 globalItems.push(createItemObj(item.id, item.model, item.sample_num, item.total_samples, true, item, item.process_name || 'Geral'));
             }
         });
@@ -311,14 +292,11 @@
         const limit = parseInt(document.getElementById('dailyLimit').value);
         localStorage.setItem('fq53_start', startStr); localStorage.setItem('fq53_limit', limit);
 
-        // Separação
-        // Pendentes: não feitos E não são registros de falha (pois falha é histórico)
+        // Pendentes: não feitos (nem falhas)
         let pending = globalItems.filter(i => !i.done).sort((a,b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
-        
-        // Concluídos ou Falhas registradas
+        // Concluídos (Sucessos e Falhas)
         let completed = globalItems.filter(i => i.done).sort((a,b) => new Date(b.doneDate||0) - new Date(a.doneDate||0));
 
-        // Stats do dia (para o card "Realizados Hoje")
         const todayStr = new Date().toISOString().split('T')[0];
         const doneTodayCount = completed.filter(i => i.doneDate === todayStr).length;
 
@@ -345,7 +323,6 @@
                 
                 let slots = limit;
                 if(isToday) {
-                    // Capacidade = Limite - (Sucessos + Falhas de hoje)
                     const doneAndFailedToday = completed.filter(i => i.doneDate === dateKey).length;
                     slots = Math.max(0, limit - doneAndFailedToday);
                 }
@@ -369,9 +346,7 @@
                     let html = batch.map(item => `
                         <div class="checklist-item ${item.priority ? 'priority' : ''}">
                             <input type="checkbox" class="item-check" onclick="toggleItem('${item.id}')" title="Marcar como OK">
-                            
                             <button class="btn-fail" onclick="markAsFailed('${item.id}')" title="Registrar Falha e Manter na Fila">⚠️</button>
-
                             <div style="flex-grow:1">
                                 <div class="item-title">
                                     ${item.model} 
@@ -414,10 +389,6 @@
             if (item.isFailed) tr.className = 'failed-row';
             
             let statusIcon = item.isFailed ? '⚠️ <b style="color:#721c24;">FALHA</b>' : '✅ OK';
-
-            // Botão de desfazer: 
-            // Se for falha, deleta o registro. 
-            // Se for sucesso, apenas desmarca.
             let undoAction = item.isFailed ? `deleteFailRecord('${item.id}')` : `toggleItem('${item.id}')`;
 
             tr.innerHTML = `
@@ -443,8 +414,6 @@
     }
 
     // --- ACTIONS ---
-    
-    // Sucesso (Sai da fila)
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
         const newState = !item.done;
@@ -453,24 +422,21 @@
         renderApp(); renderPerformance(); await dbUpsert(item);
     }
 
-    // NOVA LÓGICA DE FALHA: Duplica o item para o histórico, mantém original na fila
+    // NOVA LÓGICA DE FALHA COM ATUALIZAÇÃO LOCAL IMEDIATA
     async function markAsFailed(id) {
         const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo (ex: queima, erro de montagem).\nO ensaio contará como tempo utilizado hoje, mas a amostra continuará na fila para amanhã.");
         if (!reason || reason.trim() === "") { alert("Justificativa obrigatória."); return; }
 
         const original = globalItems.find(i => i.id === id);
-        
-        // Cria ID único para o registro de falha
         const failId = `${original.id}_fail_${Date.now()}`;
         
-        // Objeto para salvar (clone)
         const failRecord = {
             id: failId,
             model: original.model,
             sample_num: original.sampleNum,
             total_samples: original.totalSamples,
             process_name: original.process,
-            is_custom: true, // Importante para ser carregado depois
+            is_custom: true, // Garante que apareça como custom
             done: true,
             done_date: new Date().toISOString().split('T')[0],
             is_failed: true,
@@ -479,22 +445,23 @@
             is_deleted: false
         };
 
-        // Insere no banco
-        await labDB.from(TABLE_MAIN).insert(failRecord);
+        // 1. Atualiza LOCALMENTE (Instantâneo)
+        globalItems.push(createItemObj(
+            failRecord.id, failRecord.model, failRecord.sample_num, failRecord.total_samples, 
+            true, failRecord, failRecord.process_name
+        ));
         
-        // Recarrega para mostrar no histórico
-        fetchData();
+        // 2. Renderiza a Tela
+        renderApp(); renderPerformance();
+
+        // 3. Salva no Banco (Background)
+        await labDB.from(TABLE_MAIN).insert(failRecord);
     }
 
-    // Deleta o registro de falha (se foi criado por engano)
     async function deleteFailRecord(id) {
         if(!confirm("Apagar este registro de falha do histórico?")) return;
-        
-        // Remove visualmente
         globalItems = globalItems.filter(i => i.id !== id);
         renderApp(); renderPerformance();
-        
-        // Apaga do banco
         await labDB.from(TABLE_MAIN).delete().eq('id', id);
     }
 
@@ -552,7 +519,6 @@
         closeModals(); fetchData();
     }
 
-    // --- MODALS & EXTRAS ---
     function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
     function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
     function openManagerModal() {
@@ -578,7 +544,6 @@
         }
     }
 
-    // --- PERFORMANCE & CHARTS ---
     function renderPerformance() {
         const startStr = document.getElementById('startDate').value;
         const limit = parseInt(document.getElementById('dailyLimit').value);
