@@ -36,7 +36,7 @@
         .dash-val { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
         .dash-label { font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 700; margin-top: 5px; }
         
-        /* PREVISÃO POR PROCESSO CONTAINER */
+        /* PREVISÃO POR PROCESSO */
         .process-forecast-container { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 120px; overflow-y: auto; }
         .forecast-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--info); font-size: 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .forecast-date { font-weight: bold; color: var(--primary); }
@@ -53,7 +53,6 @@
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-manage { background: #6c757d; color: white; }
-        .btn-icon { padding: 5px; background: transparent; color: #666; font-size: 1.1rem; } .btn-icon:hover { transform: scale(1.1); }
 
         /* TABLES */
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; font-size: 0.9rem; }
@@ -91,8 +90,6 @@
         /* MODALS */
         .modal-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); display:none; justify-content:center; align-items:center; z-index:1000; }
         .modal { background:white; padding:25px; border-radius:8px; width:90%; max-width:500px; box-shadow:0 4px 15px rgba(0,0,0,0.2); }
-        
-        /* PERFORMANCE */
         .badge { padding: 4px 8px; border-radius: 4px; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; }
         .badge-ok { background: #d4edda; color: #155724; }
         .badge-warning { background: #fff3cd; color: #856404; }
@@ -110,7 +107,7 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs</h1>
+        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V13.0</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -126,7 +123,7 @@
             </div>
             <div class="dash-card">
                 <span class="dash-val" id="valDone" style="color:var(--success)">--</span>
-                <span class="dash-label">Realizados</span>
+                <span class="dash-label">Realizados Hoje</span>
             </div>
             <div class="process-forecast-container" id="forecastContainer">
                 <div style="text-align:center; color:#999; font-size:0.9rem; padding:10px;">Calculando previsões...</div>
@@ -173,7 +170,7 @@
             <div class="dash-card"><span class="dash-val" id="perfAvg">--</span><span class="dash-label">Média Real</span></div>
             <div class="dash-card"><span class="dash-val" id="perfEff">--%</span><span class="dash-label">Eficiência</span></div>
             <div class="dash-card" style="align-items: flex-start; text-align: left; padding-left: 20px;">
-                <span style="font-size:0.9rem; color:#666;">ℹ️ Ensaios com falha contam na performance pois consumiram tempo de máquina.</span>
+                <span style="font-size:0.9rem; color:#666;">ℹ️ Ensaios com falha contam como tempo utilizado, mas permanecem na fila para amanhã.</span>
             </div>
         </div>
         
@@ -229,8 +226,8 @@
     // ==========================================
     // ⚠️ CONFIGURAÇÃO DO SUPABASE
     // ==========================================
-    const SUPABASE_URL = 'https://uzftppvvshpyoejmptjm.supabase.co'; 
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6ZnRwcHZ2c2hweW9lam1wdGptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njg1ODU4NjgsImV4cCI6MjA4NDE2MTg2OH0.lnB46eC4dwQpRYdeJreNLu8vOMGED2GOBLOoO3vnPIs';
+    const SUPABASE_URL = 'COLE_SUA_URL_AQUI'; 
+    const SUPABASE_KEY = 'COLE_SUA_CHAVE_ANON_AQUI';
     // ==========================================
 
     let labDB = null;
@@ -240,7 +237,6 @@
     const TABLE_MAIN = 'cronograma_lab';
     const TABLE_LOGS = 'daily_logs';
 
-    // Lista Base Legado (Agora assumimos que fazem parte de um Processo Padrão se não tiverem nome)
     const baseModelsList = [
         "IL-MIR 150W_5K", "IL-MIR 80W_5K", "IL-MIR 136W_5K", "IL-MIR 115W_5K", "IL-MIR 100W_5K", "IL-MIR 70W_5K", "IL-MIR 60W_5K", "IL-MIR_50W_5K", "IL-MIR 40W 5K", "IL-MIR 30W 5K",
         "IL-MIR 150W_4K", "IL-MIR 80W_4K", "IL-MIR 136W_4K", "IL-MIR 115W_4K", "IL-MIR 100W 4K", "IL-MIR_70W 4K", "IL-MIR_60W_4K", "IL-MIR_50W_4K", "IL-MIR 40W 4K", "IL-MIR 30W 4K",
@@ -272,21 +268,19 @@
         globalItems = [];
         const dbMap = new Map((items||[]).map(i => [i.id, i]));
 
-        // Base Models (Legado)
         baseModelsList.forEach((model, mIdx) => {
             for(let i=1; i<=3; i++) {
                 let id = `chk_${mIdx}_${i}`;
                 let dbData = dbMap.get(id);
                 if (dbData && dbData.is_deleted) continue; 
-                // Se não tem dbData, usa defaults. Se tem, usa o processo salvo ou 'Geral'
                 let proc = dbData ? (dbData.process_name || 'Geral') : 'Geral';
                 globalItems.push(createItemObj(id, model, i, 3, false, dbData, proc));
             }
         });
 
-        // Custom Models
         (items||[]).forEach(item => {
             if (item.is_custom && !item.is_deleted) {
+                // Se for um item de falha (cópia), ele aparece na lista como custom também
                 globalItems.push(createItemObj(item.id, item.model, item.sample_num, item.total_samples, true, item, item.process_name || 'Geral'));
             }
         });
@@ -317,21 +311,27 @@
         const limit = parseInt(document.getElementById('dailyLimit').value);
         localStorage.setItem('fq53_start', startStr); localStorage.setItem('fq53_limit', limit);
 
-        // Sorting
+        // Separação
+        // Pendentes: não feitos E não são registros de falha (pois falha é histórico)
         let pending = globalItems.filter(i => !i.done).sort((a,b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
+        
+        // Concluídos ou Falhas registradas
         let completed = globalItems.filter(i => i.done).sort((a,b) => new Date(b.doneDate||0) - new Date(a.doneDate||0));
 
-        document.getElementById('valRemaining').innerText = pending.length;
-        document.getElementById('valDone').innerText = completed.length;
+        // Stats do dia (para o card "Realizados Hoje")
+        const todayStr = new Date().toISOString().split('T')[0];
+        const doneTodayCount = completed.filter(i => i.doneDate === todayStr).length;
 
-        // --- PREDICTION LOGIC PER PROCESS ---
+        document.getElementById('valRemaining').innerText = pending.length;
+        document.getElementById('valDone').innerText = doneTodayCount;
+
+        // --- PREVISÃO ---
         const tbody = document.querySelector('#pendingTable tbody');
         tbody.innerHTML = '';
         let currentDate = new Date(startStr + 'T00:00:00');
         let today = new Date(); today.setHours(0,0,0,0);
         let qIdx = 0;
-        
-        let processEndDates = {}; // Map to track end date per process
+        let processEndDates = {};
 
         if(pending.length === 0) {
             tbody.innerHTML = '<tr><td colspan="3" align="center">🎉 Tudo pronto!</td></tr>';
@@ -345,8 +345,9 @@
                 
                 let slots = limit;
                 if(isToday) {
-                    const doneToday = completed.filter(i => i.doneDate === dateKey).length;
-                    slots = Math.max(0, limit - doneToday);
+                    // Capacidade = Limite - (Sucessos + Falhas de hoje)
+                    const doneAndFailedToday = completed.filter(i => i.doneDate === dateKey).length;
+                    slots = Math.max(0, limit - doneAndFailedToday);
                 }
                 if(currentDate < today) slots = 0; 
 
@@ -355,7 +356,6 @@
                     if(qIdx < pending.length) { 
                         let item = pending[qIdx];
                         batch.push(item);
-                        // Update process prediction
                         processEndDates[item.process] = new Date(currentDate);
                         qIdx++; 
                     }
@@ -370,7 +370,7 @@
                         <div class="checklist-item ${item.priority ? 'priority' : ''}">
                             <input type="checkbox" class="item-check" onclick="toggleItem('${item.id}')" title="Marcar como OK">
                             
-                            <button class="btn-fail" onclick="markAsFailed('${item.id}')" title="Marcar Falha/Erro">⚠️</button>
+                            <button class="btn-fail" onclick="markAsFailed('${item.id}')" title="Registrar Falha e Manter na Fila">⚠️</button>
 
                             <div style="flex-grow:1">
                                 <div class="item-title">
@@ -394,26 +394,19 @@
                 currentDate.setDate(currentDate.getDate()+1);
             }
             
-            // Render Process Forecasts
             const forecastDiv = document.getElementById('forecastContainer');
             forecastDiv.innerHTML = '';
-            // Sort keys just to look nice
             Object.keys(processEndDates).sort().forEach(procName => {
                 const d = processEndDates[procName];
                 const dateStr = d.toLocaleDateString('pt-BR');
                 const diffTime = d - today;
                 const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                 const label = diffDays > 0 ? `(em ${diffDays} dias)` : '(Hoje)';
-                
-                forecastDiv.innerHTML += `
-                    <div class="forecast-row">
-                        <span>${procName}</span>
-                        <span class="forecast-date">Termina: ${dateStr} <small>${label}</small></span>
-                    </div>`;
+                forecastDiv.innerHTML += `<div class="forecast-row"><span>${procName}</span><span class="forecast-date">Termina: ${dateStr} <small>${label}</small></span></div>`;
             });
         }
 
-        // Render Realizados (Com Destaque para Falhas)
+        // Render Histórico
         const doneBody = document.querySelector('#completedTable tbody');
         doneBody.innerHTML = '';
         completed.forEach(item => {
@@ -421,6 +414,11 @@
             if (item.isFailed) tr.className = 'failed-row';
             
             let statusIcon = item.isFailed ? '⚠️ <b style="color:#721c24;">FALHA</b>' : '✅ OK';
+
+            // Botão de desfazer: 
+            // Se for falha, deleta o registro. 
+            // Se for sucesso, apenas desmarca.
+            let undoAction = item.isFailed ? `deleteFailRecord('${item.id}')` : `toggleItem('${item.id}')`;
 
             tr.innerHTML = `
                 <td><input type="date" class="date-edit" value="${item.doneDate||''}" onchange="updateDate('${item.id}', this.value)"></td>
@@ -434,9 +432,9 @@
                     <div style="display:flex; align-items:center; gap:10px;">
                         <span>${statusIcon}</span>
                         <input type="text" class="obs-input" value="${item.obs||''}" onchange="saveObs('${item.id}', this.value)" 
-                               placeholder="${item.isFailed ? 'Justificativa da falha obrigatória' : 'Observações'}">
+                               placeholder="${item.isFailed ? 'Justificativa obrigatória' : 'Observações'}">
                         
-                        ${!item.isFailed ? `<button class="btn-danger" style="font-size:0.7rem; padding:2px 5px;" onclick="toggleItem('${item.id}')">Desfazer</button>` : `<button class="btn-danger" style="font-size:0.7rem; padding:2px 5px;" onclick="undoFail('${item.id}')">Desfazer</button>`}
+                        <button class="btn-danger" style="font-size:0.7rem; padding:2px 5px;" onclick="${undoAction}">Desfazer</button>
                     </div>
                 </td>
             `;
@@ -446,44 +444,58 @@
 
     // --- ACTIONS ---
     
-    // Sucesso Normal
+    // Sucesso (Sai da fila)
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
         const newState = !item.done;
-        // Se estava 'failed' e o usuário clicou no check, reseta falha
-        item.isFailed = false; 
-        item.done = newState;
+        item.isFailed = false; item.done = newState;
         item.doneDate = item.done ? new Date().toISOString().split('T')[0] : null;
-        renderApp(); renderPerformance();
-        await dbUpsert(item);
+        renderApp(); renderPerformance(); await dbUpsert(item);
     }
 
-    // Marcar como Falha (Consome slot mas marca erro)
+    // NOVA LÓGICA DE FALHA: Duplica o item para o histórico, mantém original na fila
     async function markAsFailed(id) {
-        const reason = prompt("⚠️ REGISTRO DE FALHA\n\nPor favor, descreva o motivo da falha (ex: queima prematura, erro de montagem):");
-        if (!reason || reason.trim() === "") {
-            alert("A justificativa é obrigatória para registrar uma falha.");
-            return;
-        }
+        const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo (ex: queima, erro de montagem).\nO ensaio contará como tempo utilizado hoje, mas a amostra continuará na fila para amanhã.");
+        if (!reason || reason.trim() === "") { alert("Justificativa obrigatória."); return; }
 
-        const item = globalItems.find(i => i.id === id);
-        item.done = true;
-        item.doneDate = new Date().toISOString().split('T')[0];
-        item.isFailed = true;
-        item.obs = "[FALHA] " + reason;
+        const original = globalItems.find(i => i.id === id);
         
-        renderApp(); renderPerformance();
-        await dbUpsert(item);
+        // Cria ID único para o registro de falha
+        const failId = `${original.id}_fail_${Date.now()}`;
+        
+        // Objeto para salvar (clone)
+        const failRecord = {
+            id: failId,
+            model: original.model,
+            sample_num: original.sampleNum,
+            total_samples: original.totalSamples,
+            process_name: original.process,
+            is_custom: true, // Importante para ser carregado depois
+            done: true,
+            done_date: new Date().toISOString().split('T')[0],
+            is_failed: true,
+            obs: "[FALHA] " + reason,
+            is_priority: false,
+            is_deleted: false
+        };
+
+        // Insere no banco
+        await labDB.from(TABLE_MAIN).insert(failRecord);
+        
+        // Recarrega para mostrar no histórico
+        fetchData();
     }
 
-    async function undoFail(id) {
-        if(!confirm("Deseja desfazer este registro de falha e voltar para a fila?")) return;
-        const item = globalItems.find(i => i.id === id);
-        item.done = false;
-        item.isFailed = false;
-        item.doneDate = null;
+    // Deleta o registro de falha (se foi criado por engano)
+    async function deleteFailRecord(id) {
+        if(!confirm("Apagar este registro de falha do histórico?")) return;
+        
+        // Remove visualmente
+        globalItems = globalItems.filter(i => i.id !== id);
         renderApp(); renderPerformance();
-        await dbUpsert(item);
+        
+        // Apaga do banco
+        await labDB.from(TABLE_MAIN).delete().eq('id', id);
     }
 
     async function togglePriority(id) {
@@ -504,14 +516,12 @@
         item.obs = text; await dbUpsert(item);
     }
 
-    // --- DB HELPERS ---
     async function dbUpsert(item) {
         const payload = {
             id: item.id, model: item.model, sample_num: item.sampleNum,
             total_samples: item.totalSamples, is_custom: item.isCustom,
             done: item.done, done_date: item.doneDate, obs: item.obs, 
-            is_priority: item.priority, process_name: item.process, // NOVA COLUNA
-            is_failed: item.isFailed // NOVA COLUNA
+            is_priority: item.priority, process_name: item.process, is_failed: item.isFailed
         };
         await labDB.from(TABLE_MAIN).upsert(payload);
     }
@@ -521,7 +531,6 @@
         const name = document.getElementById('newModelName').value.trim();
         const count = document.getElementById('newModelCount').value;
         if(!name) return;
-        
         const baseId = 'custom_' + Date.now();
         const inserts = [];
         for(let i=1; i<=count; i++) inserts.push({ 
@@ -529,7 +538,6 @@
             is_custom: true, done: false, done_date: null, obs: "", is_priority: false, is_deleted: false,
             process_name: proc, is_failed: false
         });
-        
         await labDB.from(TABLE_MAIN).insert(inserts);
         closeModals(); fetchData();
     }
@@ -538,7 +546,7 @@
         if(!confirm(`Excluir modelo "${modelName}"?`)) return;
         const itemsToDelete = globalItems.filter(i => i.model === modelName);
         for (let item of itemsToDelete) {
-            item.is_deleted = true; // Local update
+            item.is_deleted = true; 
             await labDB.from(TABLE_MAIN).update({ is_deleted: true }).eq('id', item.id);
         }
         closeModals(); fetchData();
@@ -582,7 +590,6 @@
         while(loopDate <= today) {
             if(loopDate.getDay() !== 0 && loopDate.getDay() !== 6) {
                 const dateKey = loopDate.toISOString().split('T')[0];
-                // Count both success AND failed as work done
                 const count = globalItems.filter(i => i.doneDate === dateKey).length;
                 daysData.push({ date: dateKey, dateObj: new Date(loopDate), count: count, target: limit, log: globalLogs.get(dateKey) || "" });
                 if(loopDate < today) { totalDone += count; daysCounted++; }
@@ -612,21 +619,20 @@
             type: 'bar',
             data: {
                 labels: recent.map(d => d.dateObj.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})),
-                datasets: [{ label: 'Realizado', data: recent.map(d=>d.count), backgroundColor: '#0056b3' }, { label: 'Meta', data: recent.map(d=>d.target), type: 'line', borderColor: '#28a745' }]
+                datasets: [{ label: 'Realizado (Sucesso + Falhas)', data: recent.map(d=>d.count), backgroundColor: '#0056b3' }, { label: 'Meta', data: recent.map(d=>d.target), type: 'line', borderColor: '#28a745' }]
             },
             options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
         });
     }
 
-    // --- EXPORTS ---
-    function exportExcel() { /* Mesma lógica V10 */ 
+    function exportExcel() {
         if(globalItems.filter(i=>i.done).length === 0) return alert("Nada para exportar.");
         const wb = XLSX.utils.book_new();
         const doneData = globalItems.filter(i => i.done).map(i => ({ "Data": i.doneDate, "Processo": i.process, "Modelo": i.model, "Amostra": i.sampleNum, "Status": i.isFailed?"FALHA":"OK", "Obs": i.obs }));
         XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(doneData), "Histórico");
         XLSX.writeFile(wb, "Histórico_AdvancedLabs.xlsx");
     }
-    function exportPDF() { /* Mesma lógica V10 */
+    function exportPDF() {
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.text("Histórico Advanced Labs", 14, 20);
         const data = globalItems.filter(i=>i.done).map(i=>[i.doneDate||'-', i.process, i.model, i.isFailed?'FALHA':'OK', i.obs||'']);
