@@ -28,7 +28,7 @@
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
-        .dashboard-grid { display: grid; grid-template-columns: 200px 200px 1fr; gap: 15px; margin-bottom: 25px; }
+        .dashboard-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
         .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .dash-val { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
         .dash-label { font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 700; margin-top: 5px; }
@@ -96,7 +96,7 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V13.1</span></h1>
+        <h1><i class="fas fa-microscope"></i> Ocupação e Histórico Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V14.0</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -112,7 +112,7 @@
             </div>
             <div class="dash-card">
                 <span class="dash-val" id="valDone" style="color:var(--success)">--</span>
-                <span class="dash-label">Realizados Hoje</span>
+                <span class="dash-label">Ocupação Hoje (Total)</span>
             </div>
             <div class="process-forecast-container" id="forecastContainer">
                 <div style="text-align:center; color:#999; font-size:0.9rem; padding:10px;">Calculando previsões...</div>
@@ -125,7 +125,7 @@
                 <input type="date" id="startDate" onchange="renderApp()">
             </div>
             <div class="control-group">
-                <label>Meta Diária:</label>
+                <label>Meta Diária (Capacidade Máx):</label>
                 <input type="number" id="dailyLimit" value="4" min="1" style="width: 60px;" onchange="renderApp()">
             </div>
             <button class="btn-primary" onclick="location.reload()">🔄 Sincronizar</button>
@@ -142,7 +142,7 @@
 
     <div id="tab-historico" class="tab-content">
         <div class="controls" style="background: white; border: 1px solid #eee; justify-content: space-between;">
-            <h3 style="margin:0;">✅ Histórico de Ensaios</h3>
+            <h3 style="margin:0;">✅ Histórico Geral</h3>
             <div style="display:flex; gap:10px;">
                 <button class="btn-success" onclick="exportExcel()"><i class="fas fa-file-excel"></i> Excel</button>
                 <button class="btn-danger" onclick="exportPDF()"><i class="fas fa-file-pdf"></i> PDF</button>
@@ -155,28 +155,40 @@
     </div>
 
     <div id="tab-performance" class="tab-content">
-        <div class="dashboard-grid">
-            <div class="dash-card"><span class="dash-val" id="perfAvg">--</span><span class="dash-label">Média Real</span></div>
-            <div class="dash-card"><span class="dash-val" id="perfEff">--%</span><span class="dash-label">Eficiência</span></div>
-            <div class="dash-card" style="align-items: flex-start; text-align: left; padding-left: 20px;">
-                <span style="font-size:0.9rem; color:#666;">ℹ️ Ensaios com falha contam como tempo utilizado, mas permanecem na fila para amanhã.</span>
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+            <div class="dash-card">
+                <span class="dash-val" id="perfTotalAvg">--</span>
+                <span class="dash-label">Média Ocupação (Total)</span>
+            </div>
+            <div class="dash-card">
+                <span class="dash-val" id="perfEffectiveAvg" style="color:var(--success)">--</span>
+                <span class="dash-label">Média Efetiva (Só Sucessos)</span>
+            </div>
+            <div class="dash-card">
+                <span class="dash-val" id="perfRatio">--%</span>
+                <span class="dash-label">Qualidade (% Sucesso)</span>
             </div>
         </div>
         
         <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; margin-top:20px;">
              <div style="background:white; padding:20px; border:1px solid #ddd; border-radius:8px; height:350px; position:relative;">
-                <h4 style="margin-top:0;">Evolução Diária</h4>
+                <h4 style="margin-top:0;">Evolução Diária (Produção vs Perda)</h4>
                 <div style="height:280px; position:relative;"><canvas id="perfChart"></canvas></div>
             </div>
             <div style="background:#fff3cd; padding:15px; border-radius:8px; border:1px solid #ffeeba; font-size:0.9rem;">
-                <h4 style="margin-top:0; color:#856404;">📝 Instruções</h4>
-                <p>Use a tabela abaixo para justificar dias onde a meta não foi batida.</p>
+                <h4 style="margin-top:0; color:#856404;">📝 Entenda os Gráficos</h4>
+                <ul style="padding-left:20px; margin-bottom:10px;">
+                    <li><b style="color:#0056b3">Azul (Útil):</b> Ensaios finalizados com sucesso.</li>
+                    <li><b style="color:#dc3545">Vermelho (Perda):</b> Ensaios com falha (consumiram tempo mas não geraram entrega).</li>
+                    <li><b style="color:#28a745">Linha Verde:</b> Meta de capacidade diária.</li>
+                </ul>
+                <p>Se a soma (Azul + Vermelho) atingir a linha verde, a máquina foi utilizada 100%, mesmo que haja falhas.</p>
             </div>
         </div>
 
         <h3 style="margin-top:30px;">Diário de Ocorrências</h3>
         <table class="log-table">
-            <thead><tr><th>Data</th><th>Meta</th><th>Realizado</th><th>Status</th><th>Justificativa</th></tr></thead>
+            <thead><tr><th>Data</th><th>Meta</th><th>Feito (Útil/Total)</th><th>Status</th><th>Justificativa</th></tr></thead>
             <tbody id="logTableBody"></tbody>
         </table>
     </div>
@@ -346,7 +358,7 @@
                     let html = batch.map(item => `
                         <div class="checklist-item ${item.priority ? 'priority' : ''}">
                             <input type="checkbox" class="item-check" onclick="toggleItem('${item.id}')" title="Marcar como OK">
-                            <button class="btn-fail" onclick="markAsFailed('${item.id}')" title="Registrar Falha e Manter na Fila">⚠️</button>
+                            <button class="btn-fail" onclick="markAsFailed('${item.id}')" title="Registrar Falha (Mantém na fila)">⚠️</button>
                             <div style="flex-grow:1">
                                 <div class="item-title">
                                     ${item.model} 
@@ -422,9 +434,8 @@
         renderApp(); renderPerformance(); await dbUpsert(item);
     }
 
-    // NOVA LÓGICA DE FALHA COM ATUALIZAÇÃO LOCAL IMEDIATA
     async function markAsFailed(id) {
-        const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo (ex: queima, erro de montagem).\nO ensaio contará como tempo utilizado hoje, mas a amostra continuará na fila para amanhã.");
+        const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo (ex: queima, erro de montagem).");
         if (!reason || reason.trim() === "") { alert("Justificativa obrigatória."); return; }
 
         const original = globalItems.find(i => i.id === id);
@@ -436,7 +447,7 @@
             sample_num: original.sampleNum,
             total_samples: original.totalSamples,
             process_name: original.process,
-            is_custom: true, // Garante que apareça como custom
+            is_custom: true,
             done: true,
             done_date: new Date().toISOString().split('T')[0],
             is_failed: true,
@@ -445,16 +456,13 @@
             is_deleted: false
         };
 
-        // 1. Atualiza LOCALMENTE (Instantâneo)
+        // OTIMISTA: Adiciona na lista local para aparecer na hora
         globalItems.push(createItemObj(
             failRecord.id, failRecord.model, failRecord.sample_num, failRecord.total_samples, 
             true, failRecord, failRecord.process_name
         ));
         
-        // 2. Renderiza a Tela
         renderApp(); renderPerformance();
-
-        // 3. Salva no Banco (Background)
         await labDB.from(TABLE_MAIN).insert(failRecord);
     }
 
@@ -544,35 +552,79 @@
         }
     }
 
+    // --- PERFORMANCE & CHARTS ---
     function renderPerformance() {
         const startStr = document.getElementById('startDate').value;
         const limit = parseInt(document.getElementById('dailyLimit').value);
         const today = new Date(); today.setHours(0,0,0,0);
         let loopDate = new Date(startStr + 'T00:00:00');
         const daysData = [];
-        let totalDone = 0, daysCounted = 0;
+        
+        let totalDone = 0; // Success + Fail (Occupancy)
+        let totalSuccess = 0; // Success only (Effective)
+        let daysCounted = 0;
 
         while(loopDate <= today) {
             if(loopDate.getDay() !== 0 && loopDate.getDay() !== 6) {
                 const dateKey = loopDate.toISOString().split('T')[0];
-                const count = globalItems.filter(i => i.doneDate === dateKey).length;
-                daysData.push({ date: dateKey, dateObj: new Date(loopDate), count: count, target: limit, log: globalLogs.get(dateKey) || "" });
-                if(loopDate < today) { totalDone += count; daysCounted++; }
+                
+                // Get all done items for this date
+                const itemsForDay = globalItems.filter(i => i.doneDate === dateKey);
+                const countTotal = itemsForDay.length;
+                const countSuccess = itemsForDay.filter(i => !i.isFailed).length;
+                const countFail = countTotal - countSuccess;
+
+                daysData.push({ 
+                    date: dateKey, dateObj: new Date(loopDate), 
+                    countTotal: countTotal, 
+                    countSuccess: countSuccess,
+                    countFail: countFail,
+                    target: limit, log: globalLogs.get(dateKey) || "" 
+                });
+
+                if(loopDate < today) { 
+                    totalDone += countTotal;
+                    totalSuccess += countSuccess;
+                    daysCounted++; 
+                }
             }
             loopDate.setDate(loopDate.getDate() + 1);
         }
 
-        document.getElementById('perfAvg').innerText = daysCounted > 0 ? (totalDone / daysCounted).toFixed(1) : "0.0";
-        document.getElementById('perfEff').innerText = daysCounted > 0 ? Math.round(((totalDone / daysCounted) / limit) * 100) + "%" : "0%";
+        // KPIs
+        const avgTotal = daysCounted > 0 ? (totalDone / daysCounted).toFixed(1) : "0.0";
+        const avgEffective = daysCounted > 0 ? (totalSuccess / daysCounted).toFixed(1) : "0.0";
+        
+        document.getElementById('perfTotalAvg').innerText = avgTotal;
+        document.getElementById('perfEffectiveAvg').innerText = avgEffective;
+        
+        const ratio = totalDone > 0 ? Math.round((totalSuccess / totalDone) * 100) : 0;
+        document.getElementById('perfRatio').innerText = ratio + "%";
 
+        // Log Table
         const logBody = document.getElementById('logTableBody');
         logBody.innerHTML = '';
         [...daysData].reverse().forEach(d => {
             const isToday = d.dateObj.getTime() === today.getTime();
-            let statusBadge = isToday ? '<span class="badge badge-warning">...</span>' : (d.count >= d.target ? '<span class="badge badge-ok">OK</span>' : '<span class="badge badge-danger">Baixo</span>');
-            const row = `<tr><td>${d.dateObj.toLocaleDateString('pt-BR')}</td><td>${d.target}</td><td>${d.count}</td><td>${statusBadge}</td><td><input type="text" class="obs-input" value="${d.log}" onchange="saveLog('${d.date}', this.value)"></td></tr>`;
+            let statusBadge = '';
+            
+            if(isToday) statusBadge = `<span class="badge badge-warning">...</span>`;
+            else if (d.countTotal >= d.target) statusBadge = `<span class="badge badge-ok">Meta OK</span>`;
+            else statusBadge = `<span class="badge badge-danger">Baixo</span>`;
+
+            // Display "Success / Total"
+            const displayCount = `${d.countSuccess} <small style="color:#666">/ ${d.countTotal}</small>`;
+
+            const row = `<tr>
+                <td>${d.dateObj.toLocaleDateString('pt-BR')}</td>
+                <td>${d.target}</td>
+                <td>${displayCount}</td>
+                <td>${statusBadge}</td>
+                <td><input type="text" class="obs-input" value="${d.log}" onchange="saveLog('${d.date}', this.value)"></td>
+            </tr>`;
             logBody.innerHTML += row;
         });
+        
         updateChart(daysData);
     }
 
@@ -580,13 +632,42 @@
         const ctx = document.getElementById('perfChart').getContext('2d');
         if(performanceChart) performanceChart.destroy();
         const recent = data.slice(-14);
+        
         performanceChart = new Chart(ctx, {
             type: 'bar',
             data: {
                 labels: recent.map(d => d.dateObj.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})),
-                datasets: [{ label: 'Realizado (Sucesso + Falhas)', data: recent.map(d=>d.count), backgroundColor: '#0056b3' }, { label: 'Meta', data: recent.map(d=>d.target), type: 'line', borderColor: '#28a745' }]
+                datasets: [
+                    { 
+                        label: 'Realizado (Útil)', 
+                        data: recent.map(d=>d.countSuccess), 
+                        backgroundColor: '#0056b3',
+                        stack: 'Stack 0'
+                    },
+                    { 
+                        label: 'Falha (Perda)', 
+                        data: recent.map(d=>d.countFail), 
+                        backgroundColor: '#dc3545',
+                        stack: 'Stack 0'
+                    },
+                    { 
+                        label: 'Meta Capacidade', 
+                        data: recent.map(d=>d.target), 
+                        type: 'line', 
+                        borderColor: '#28a745',
+                        borderWidth: 2,
+                        pointRadius: 0
+                    }
+                ]
             },
-            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true } } }
+            options: { 
+                responsive: true, 
+                maintainAspectRatio: false, 
+                scales: { 
+                    x: { stacked: true },
+                    y: { stacked: true, beginAtZero: true } 
+                } 
+            }
         });
     }
 
