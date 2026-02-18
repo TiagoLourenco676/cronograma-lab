@@ -445,7 +445,7 @@
         });
     }
 
-    // --- BASELINE ---
+    // --- BASELINE (METAS) ---
     async function approveSchedule(processName, dateStr) {
         if(!confirm(`Confirmar meta para "${processName}"?`)) return;
         processTargets.set(processName, dateStr);
@@ -457,7 +457,8 @@
     // --- ACTIONS ---
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
-        item.isFailed = false; item.done = !item.done;
+        const newState = !item.done;
+        item.isFailed = false; item.done = newState;
         item.doneDate = item.done ? new Date().toISOString().split('T')[0] : null;
         renderApp(); renderPerformance(); await dbUpsert(item);
     }
@@ -592,6 +593,7 @@
         doc.autoTable({startY:30, head:[['Data','Proc','Mod','St','Obs']], body:data});
         doc.save("Relatorio.pdf");
     }
+    async function secureReset() { if(prompt("Senha:")==="admin123") { await labDB.from(TABLE_MAIN).delete().neq('id','0'); await labDB.from(TABLE_LOGS).delete().neq('date','0'); location.reload(); } }
 </script>
 
 </body>
