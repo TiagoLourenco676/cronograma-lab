@@ -20,6 +20,12 @@
         header { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         h1 { margin: 0; color: var(--primary); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
+        /* STATUS DE CONEXÃO */
+        #saveStatus { font-size: 0.8rem; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.3s; }
+        .status-saved { color: var(--success); background: #d4edda; }
+        .status-saving { color: #856404; background: #fff3cd; }
+        .status-error { color: white; background: var(--danger); }
+
         .tab-menu { display: flex; gap: 5px; background: #e9ecef; padding: 5px; border-radius: 8px; }
         .tab-btn { padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: 6px; font-weight: 600; color: #666; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
         .tab-btn:hover { background: rgba(255,255,255,0.5); }
@@ -33,7 +39,6 @@
         .dash-val { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
         .dash-label { font-size: 0.7rem; text-transform: uppercase; color: #666; font-weight: 700; margin-top: 5px; }
         
-        /* PREVISÃO & METAS */
         .process-forecast-container { background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 10px; display: flex; flex-direction: column; gap: 8px; max-height: 140px; overflow-y: auto; }
         .forecast-row { display: flex; justify-content: space-between; align-items: center; background: white; padding: 8px 12px; border-radius: 4px; border-left: 4px solid var(--info); font-size: 0.9rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .forecast-info { display: flex; flex-direction: column; align-items: flex-end; }
@@ -53,7 +58,7 @@
         .btn-success { background: var(--success); color: white; }
         .btn-danger { background: var(--danger); color: white; }
         .btn-manage { background: #6c757d; color: white; }
-        .btn-target { background: transparent; border: 1px solid #ccc; color: #555; padding: 2px 6px; font-size: 0.7rem; }
+        .btn-target { background: transparent; border: 1px solid #ccc; color: #555; padding: 2px 6px; font-size: 0.7rem; cursor: pointer; }
         .btn-target:hover { background: #eee; color: var(--primary); border-color: var(--primary); }
 
         table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; font-size: 0.9rem; }
@@ -103,7 +108,8 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V15.0</span></h1>
+        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V15.1</span></h1>
+        <div id="saveStatus" class="status-saved">☁️ Todos os dados salvos</div>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -135,7 +141,7 @@
                 <label>Capacidade (Amostras/Dia):</label>
                 <input type="number" id="dailyLimit" value="4" min="1" style="width: 60px;" onchange="renderApp()">
             </div>
-            <button class="btn-primary" onclick="location.reload()">🔄 Sincronizar</button>
+            <button class="btn-primary" onclick="fetchManual()">🔄 Sincronizar</button>
             <button class="btn-add" onclick="openAddModal()">➕ Novo Ensaio</button>
             <button class="btn-manage" onclick="openManagerModal()">⚙️ Gerenciar</button>
         </div>
@@ -236,7 +242,7 @@
     let labDB = null;
     let globalItems = [];
     let globalLogs = new Map();
-    let processTargets = new Map(); // Armazena Metas
+    let processTargets = new Map(); 
     let performanceChart = null;
     
     const TABLE_MAIN = 'cronograma_lab';
@@ -250,6 +256,19 @@
         await fetchData();
     };
 
+    // Nova função manual de sincronização (sem reload brusco)
+    async function fetchManual() {
+        setSaveStatus('saving', '🔄 Sincronizando...');
+        await fetchData();
+        setSaveStatus('saved', '☁️ Dados atualizados');
+    }
+
+    function setSaveStatus(type, msg) {
+        const el = document.getElementById('saveStatus');
+        el.className = 'status-' + type;
+        el.innerText = msg;
+    }
+
     function switchTab(tab) {
         document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
         document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
@@ -258,51 +277,52 @@
     }
 
     async function fetchData() {
-        document.getElementById('loadingOverlay').style.display = 'flex';
-        
-        // Fetch Tudo
-        const [{ data: items }, { data: logs }, { data: targets }] = await Promise.all([
-            labDB.from(TABLE_MAIN).select('*'),
-            labDB.from(TABLE_LOGS).select('*'),
-            labDB.from(TABLE_TARGETS).select('*')
-        ]);
+        try {
+            // Tenta buscar as tabelas. Se targets falhar (não existir), continuamos.
+            const { data: items, error: err1 } = await labDB.from(TABLE_MAIN).select('*');
+            const { data: logs } = await labDB.from(TABLE_LOGS).select('*');
+            const { data: targets } = await labDB.from(TABLE_TARGETS).select('*');
 
-        // Processa Targets
-        processTargets = new Map();
-        if(targets) targets.forEach(t => processTargets.set(t.process_name, t.target_date));
+            if(err1) throw err1;
 
-        // Processa Logs
-        globalLogs = new Map();
-        if(logs) logs.forEach(l => globalLogs.set(l.date, l.obs));
+            // Processa Targets
+            processTargets = new Map();
+            if(targets) targets.forEach(t => processTargets.set(t.process_name, t.target_date));
 
-        // Processa Itens
-        globalItems = [];
-        if(items) {
-            items.forEach(item => {
-                // Filtra deletados apenas se não for falha (falha é histórico e precisa aparecer se for done)
-                if (item.is_deleted) return; 
-                
-                // Normalização
-                const proc = item.process_name || 'Geral';
-                globalItems.push({
-                    id: item.id,
-                    model: item.model,
-                    sampleNum: item.sample_num,
-                    totalSamples: item.total_samples,
-                    process: proc,
-                    isCustom: item.is_custom,
-                    done: item.done,
-                    doneDate: item.done_date,
-                    obs: item.obs,
-                    priority: item.is_priority || false,
-                    isFailed: item.is_failed || false
+            // Processa Logs
+            globalLogs = new Map();
+            if(logs) logs.forEach(l => globalLogs.set(l.date, l.obs));
+
+            // Processa Itens
+            globalItems = [];
+            if(items) {
+                items.forEach(item => {
+                    if (item.is_deleted) return; 
+                    const proc = item.process_name || 'Geral';
+                    globalItems.push({
+                        id: item.id,
+                        model: item.model,
+                        sampleNum: item.sample_num,
+                        totalSamples: item.total_samples,
+                        process: proc,
+                        isCustom: item.is_custom,
+                        done: item.done,
+                        doneDate: item.done_date,
+                        obs: item.obs,
+                        priority: item.is_priority || false,
+                        isFailed: item.is_failed || false
+                    });
                 });
-            });
-        }
+            }
 
-        renderApp();
-        renderPerformance();
-        document.getElementById('loadingOverlay').style.display = 'none';
+            renderApp();
+            renderPerformance();
+            document.getElementById('loadingOverlay').style.display = 'none';
+        } catch(e) {
+            console.error(e);
+            alert("Erro ao conectar. Verifique se as tabelas foram criadas no Supabase.\n" + e.message);
+            document.getElementById('loadingOverlay').style.display = 'none';
+        }
     }
 
     function renderApp() {
@@ -324,7 +344,7 @@
         let currentDate = new Date(startStr + 'T00:00:00');
         let today = new Date(); today.setHours(0,0,0,0);
         let qIdx = 0;
-        let processEndDates = {}; // Calcula previsão atual
+        let processEndDates = {}; 
 
         if(pending.length === 0) {
             tbody.innerHTML = '<tr><td colspan="3" align="center">🎉 Tudo pronto!</td></tr>';
@@ -348,7 +368,7 @@
                     if(qIdx < pending.length) { 
                         let item = pending[qIdx];
                         batch.push(item);
-                        processEndDates[item.process] = new Date(currentDate); // Atualiza última data vista para este processo
+                        processEndDates[item.process] = new Date(currentDate); 
                         qIdx++; 
                     }
                 }
@@ -387,11 +407,9 @@
                 const forecastStr = forecastDate.toISOString().split('T')[0];
                 const targetStr = processTargets.get(procName);
                 
-                // Cálculo de Status
                 let metaHTML = '';
                 if(targetStr) {
                     const targetDate = new Date(targetStr + 'T00:00:00');
-                    // Diferença em dias
                     const diffTime = forecastDate - targetDate;
                     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
                     
@@ -415,7 +433,6 @@
             });
         }
 
-        // Histórico
         const doneBody = document.querySelector('#completedTable tbody');
         doneBody.innerHTML = '';
         completed.forEach(item => {
@@ -435,14 +452,12 @@
     // --- BASELINE (METAS) ---
     async function approveSchedule(processName, dateStr) {
         if(!confirm(`Confirmar meta de entrega para "${processName}" em ${new Date(dateStr).toLocaleDateString('pt-BR')}?`)) return;
-        
-        // Atualiza Local
         processTargets.set(processName, dateStr);
-        renderApp(); // Atualiza UI na hora
-
-        // Salva DB
+        renderApp(); 
+        setSaveStatus('saving', 'Salvando meta...');
         const { error } = await labDB.from(TABLE_TARGETS).upsert({ process_name: processName, target_date: dateStr });
-        if(error) alert("Erro ao salvar meta: " + error.message);
+        if(error) { alert("Erro: " + error.message); setSaveStatus('error', 'Erro ao salvar'); }
+        else setSaveStatus('saved', 'Meta salva!');
     }
 
     // --- ACTIONS ---
@@ -461,7 +476,6 @@
         const original = globalItems.find(i => i.id === id);
         const failId = `${original.id}_fail_${Date.now()}`;
         
-        // Clone para o histórico
         const failRecord = {
             id: failId,
             model: original.model,
@@ -476,22 +490,26 @@
             priority: false
         };
 
-        globalItems.push(failRecord); // Otimista
+        globalItems.push(failRecord); 
         renderApp(); renderPerformance();
 
+        setSaveStatus('saving', 'Registrando falha...');
         await labDB.from(TABLE_MAIN).insert({
             id: failRecord.id, model: failRecord.model, sample_num: failRecord.sampleNum,
             total_samples: failRecord.totalSamples, process_name: failRecord.process,
             is_custom: true, done: true, done_date: failRecord.doneDate, is_failed: true,
             obs: failRecord.obs, is_priority: false, is_deleted: false
         });
+        setSaveStatus('saved', 'Falha registrada');
     }
 
     async function deleteFailRecord(id) {
         if(!confirm("Apagar este registro?")) return;
         globalItems = globalItems.filter(i => i.id !== id);
         renderApp(); renderPerformance();
+        setSaveStatus('saving', 'Apagando...');
         await labDB.from(TABLE_MAIN).delete().eq('id', id);
+        setSaveStatus('saved', 'Apagado');
     }
 
     async function togglePriority(id) { const item = globalItems.find(i => i.id === id); item.priority = !item.priority; renderApp(); await dbUpsert(item); }
@@ -499,15 +517,17 @@
     async function saveObs(id, val) { const item = globalItems.find(i => i.id === id); item.obs = val; await dbUpsert(item); }
     async function saveLog(d, v) { globalLogs.set(d, v); await labDB.from(TABLE_LOGS).upsert({date: d, obs: v}); }
     
-    async function dbUpsert(i) {
+    async function dbUpsert(item) {
+        setSaveStatus('saving', 'Salvando...');
         await labDB.from(TABLE_MAIN).upsert({
-            id: i.id, model: i.model, sample_num: i.sampleNum, total_samples: i.totalSamples, 
-            is_custom: i.isCustom, done: i.done, done_date: i.doneDate, obs: i.obs, 
-            is_priority: i.priority, process_name: i.process, is_failed: i.isFailed, is_deleted: false
+            id: item.id, model: item.model, sample_num: item.sampleNum, total_samples: item.totalSamples, 
+            is_custom: item.isCustom, done: item.done, done_date: item.doneDate, obs: item.obs, 
+            is_priority: item.priority, process_name: item.process, is_failed: item.isFailed, is_deleted: false
         });
+        setSaveStatus('saved', 'Salvo!');
     }
 
-    // --- PERFORMANCE CALCULATOR (AGORA COM "HOJE") ---
+    // --- PERFORMANCE CALCULATOR ---
     function renderPerformance() {
         const startStr = document.getElementById('startDate').value;
         const limit = parseInt(document.getElementById('dailyLimit').value);
@@ -519,40 +539,28 @@
         let totalSuccess = 0;
         let daysCounted = 0;
 
-        // Loop INCLUINDO hoje se tiver dados
         while(loopDate <= today) {
-            // Ignora FDS para cálculo de dias, mas se tiver produção no FDS, ela aparece?
-            // Vamos simplificar: Se tem produção, conta. Se é dia útil e não tem, conta zero.
-            const isWeekend = (loopDate.getDay() === 0 || loopDate.getDay() === 6);
-            const dateKey = loopDate.toISOString().split('T')[0];
-            
-            const itemsForDay = globalItems.filter(i => i.doneDate === dateKey);
-            const countTotal = itemsForDay.length;
-            const countSuccess = itemsForDay.filter(i => !i.isFailed).length;
-            const countFail = countTotal - countSuccess;
+            if(loopDate.getDay() !== 0 && loopDate.getDay() !== 6) {
+                const dateKey = loopDate.toISOString().split('T')[0];
+                const itemsForDay = globalItems.filter(i => i.doneDate === dateKey);
+                const countTotal = itemsForDay.length;
+                
+                // Inclui hoje mesmo se vazio, mas cuidado com a média
+                const isToday = loopDate.getTime() === today.getTime();
+                if (!isToday || countTotal > 0) {
+                    const countSuccess = itemsForDay.filter(i => !i.isFailed).length;
+                    const countFail = countTotal - countSuccess;
 
-            // Se é FDS e não teve produção, ignora
-            if (isWeekend && countTotal === 0) {
-                loopDate.setDate(loopDate.getDate() + 1);
-                continue;
+                    daysData.push({ 
+                        date: dateKey, dateObj: new Date(loopDate), 
+                        countTotal, countSuccess, countFail, target: limit, log: globalLogs.get(dateKey) || "" 
+                    });
+
+                    totalDone += countTotal;
+                    totalSuccess += countSuccess;
+                    daysCounted++; 
+                }
             }
-
-            // Se é Hoje e ainda não tem produção, não conta na média para não derrubar
-            const isToday = loopDate.getTime() === today.getTime();
-            if (isToday && countTotal === 0) {
-                loopDate.setDate(loopDate.getDate() + 1);
-                continue; 
-            }
-
-            daysData.push({ 
-                date: dateKey, dateObj: new Date(loopDate), 
-                countTotal, countSuccess, countFail, target: limit, log: globalLogs.get(dateKey) || "" 
-            });
-
-            totalDone += countTotal;
-            totalSuccess += countSuccess;
-            daysCounted++;
-            
             loopDate.setDate(loopDate.getDate() + 1);
         }
 
@@ -603,52 +611,47 @@
         listDiv.innerHTML = '';
         const uniqueModels = [...new Set(globalItems.map(i => i.model))];
         uniqueModels.forEach(modelName => {
-            const item = globalItems.find(i => i.model === modelName);
-            listDiv.innerHTML += `<div class="checklist-item" style="justify-content:space-between;"><div><strong>${modelName}</strong> <span class="tag tag-sample">${item.process}</span></div><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteModel('${modelName}')">🗑️</button></div>`;
+            listDiv.innerHTML += `<div class="checklist-item" style="justify-content:space-between;"><div><strong>${modelName}</strong></div><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteModel('${modelName}')">🗑️</button></div>`;
         });
         document.getElementById('managerModal').style.display = 'flex';
     }
     
     async function addNewModel() {
-        const proc = document.getElementById('newProcessName').value.trim() || "Geral";
-        const name = document.getElementById('newModelName').value.trim();
+        const proc = document.getElementById('newProcessName').value || "Geral";
+        const name = document.getElementById('newModelName').value;
         const count = document.getElementById('newModelCount').value;
         if(!name) return;
         const baseId = 'custom_' + Date.now();
         const inserts = [];
-        for(let i=1; i<=count; i++) inserts.push({ 
-            id: `${baseId}_${i}`, model: name, sample_num: i, total_samples: count, 
-            is_custom: true, done: false, done_date: null, obs: "", is_priority: false, is_deleted: false,
-            process_name: proc, is_failed: false
-        });
+        for(let i=1; i<=count; i++) inserts.push({ id: `${baseId}_${i}`, model: name, sample_num: i, total_samples: count, is_custom: true, done: false, done_date: null, obs: "", is_priority: false, is_deleted: false, process_name: proc, is_failed: false });
+        setSaveStatus('saving', 'Adicionando...');
         await labDB.from(TABLE_MAIN).insert(inserts);
+        setSaveStatus('saved', 'Adicionado');
         closeModals(); fetchData();
     }
 
     async function deleteModel(modelName) {
-        if(!confirm(`Excluir modelo "${modelName}"?`)) return;
-        const itemsToDelete = globalItems.filter(i => i.model === modelName);
-        for (let item of itemsToDelete) {
-            item.is_deleted = true; 
-            await labDB.from(TABLE_MAIN).update({ is_deleted: true }).eq('id', item.id);
-        }
+        if(!confirm("Excluir?")) return;
+        const items = globalItems.filter(i => i.model === modelName);
+        for (let item of items) { item.is_deleted = true; await labDB.from(TABLE_MAIN).update({ is_deleted: true }).eq('id', item.id); }
         closeModals(); fetchData();
     }
 
     function exportExcel() {
         if(globalItems.filter(i=>i.done).length === 0) return alert("Nada para exportar.");
         const wb = XLSX.utils.book_new();
-        const doneData = globalItems.filter(i => i.done).map(i => ({ "Data": i.doneDate, "Processo": i.process, "Modelo": i.model, "Amostra": i.sampleNum, "Status": i.isFailed?"FALHA":"OK", "Obs": i.obs }));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(doneData), "Histórico");
-        XLSX.writeFile(wb, "Histórico_AdvancedLabs.xlsx");
+        const data = globalItems.filter(i=>i.done).map(i=>({"Data":i.doneDate,"Proc":i.process,"Mod":i.model,"St":i.isFailed?"FALHA":"OK","Obs":i.obs}));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), "Hist");
+        XLSX.writeFile(wb, "LabReport.xlsx");
     }
     function exportPDF() {
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.text("Histórico Advanced Labs", 14, 20);
-        const data = globalItems.filter(i=>i.done).map(i=>[i.doneDate||'-', i.process, i.model, i.isFailed?'FALHA':'OK', i.obs||'']);
-        doc.autoTable({ startY: 30, head: [['Data', 'Processo', 'Modelo', 'Status', 'Obs']], body: data });
-        doc.save("Relatorio_AdvancedLabs.pdf");
+        const data = globalItems.filter(i=>i.done).map(i=>[i.doneDate, i.process, i.model, i.isFailed?"FALHA":"OK", i.obs]);
+        doc.autoTable({startY:30, head:[['Data','Proc','Mod','St','Obs']], body:data});
+        doc.save("Relatorio.pdf");
     }
+    async function secureReset() { if(prompt("Senha:")==="admin123") { await labDB.from(TABLE_MAIN).delete().neq('id','0'); await labDB.from(TABLE_LOGS).delete().neq('date','0'); location.reload(); } }
 </script>
 
 </body>
