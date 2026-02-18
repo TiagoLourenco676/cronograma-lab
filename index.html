@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCP Advanced Labs - V15.3</title>
+    <title>PCP Advanced Labs - V16.0</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,22 +17,26 @@
         body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
         .container { max-width: 1250px; margin: 0 auto; background: var(--card); padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.06); }
         
+        /* HEADER */
         header { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         h1 { margin: 0; color: var(--primary); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
         /* STATUS BAR */
-        #status-bar { padding: 8px 15px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; display:none; margin-bottom: 15px; }
+        #status-bar { padding: 10px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; display:none; margin-bottom: 15px; text-align: center; }
         .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .status-loading { background: #e2e6ea; color: #333; border: 1px solid #ccc; }
 
+        /* TABS */
         .tab-menu { display: flex; gap: 5px; background: #e9ecef; padding: 5px; border-radius: 8px; }
         .tab-btn { padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: 6px; font-weight: 600; color: #666; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
+        .tab-btn:hover { background: rgba(255,255,255,0.5); }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
+        /* DASHBOARD */
         .dashboard-grid { display: grid; grid-template-columns: 180px 180px 1fr; gap: 15px; margin-bottom: 25px; }
         .dash-card { background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; display: flex; flex-direction: column; justify-content: center; }
         .dash-val { display: block; font-size: 1.8rem; font-weight: 800; color: var(--primary); }
@@ -102,12 +106,12 @@
 
 <div id="loadingOverlay">
     <div class="spinner"></div>
-    <div style="margin-top:15px; font-weight:600; color:#555;">Sincronizando PCP...</div>
+    <div style="margin-top:15px; font-weight:600; color:#555;">Carregando Laboratório...</div>
 </div>
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V15.3</span></h1>
+        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V16.0</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
@@ -249,6 +253,13 @@
     const TABLE_LOGS = 'daily_logs';
     const TABLE_TARGETS = 'process_targets';
 
+    // LISTA DE MODELOS PADRÃO (RESTAURADA)
+    const baseModelsList = [
+        "IL-MIR 150W_5K", "IL-MIR 80W_5K", "IL-MIR 136W_5K", "IL-MIR 115W_5K", "IL-MIR 100W_5K", "IL-MIR 70W_5K", "IL-MIR 60W_5K", "IL-MIR_50W_5K", "IL-MIR 40W 5K", "IL-MIR 30W 5K",
+        "IL-MIR 150W_4K", "IL-MIR 80W_4K", "IL-MIR 136W_4K", "IL-MIR 115W_4K", "IL-MIR 100W 4K", "IL-MIR_70W 4K", "IL-MIR_60W_4K", "IL-MIR_50W_4K", "IL-MIR 40W 4K", "IL-MIR 30W 4K",
+        "IL-MIR 150W_2,7K", "IL-MIR 80W_2,7K", "IL-MIR 136W_2,7K", "IL-MIR 115W_2,7K", "IL-MIR 100W 2,7K", "IL-MIR 70W_2,7K", "IL-MIR 60W 2.7K", "IL-MIR 50W 2,7K", "IL-MIR 40W_2,7K", "IL-MIR 30W_2,7K"
+    ];
+
     window.onload = async function() {
         labDB = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         document.getElementById('startDate').value = localStorage.getItem('fq53_start') || new Date().toISOString().split('T')[0];
@@ -293,28 +304,39 @@
             if(logs) logs.forEach(l => globalLogs.set(l.date, l.obs));
 
             globalItems = [];
+            const dbMap = new Map((items||[]).map(i => [i.id, i]));
+
+            // 1. Processa Base Models (Padrão)
+            baseModelsList.forEach((model, mIdx) => {
+                for(let i=1; i<=3; i++) {
+                    let id = `chk_${mIdx}_${i}`;
+                    let dbData = dbMap.get(id);
+                    if (dbData && dbData.is_deleted) continue; 
+                    let proc = dbData ? (dbData.process_name || 'Geral') : 'Geral';
+                    globalItems.push(createItemObj(id, model, i, 3, false, dbData, proc));
+                }
+            });
+
+            // 2. Processa Items do Banco (Custom + Falhas)
             if(items) {
                 items.forEach(item => {
-                    if (item.is_deleted) return; 
-                    const proc = item.process_name || 'Geral';
-                    globalItems.push({
-                        id: item.id,
-                        model: item.model,
-                        sampleNum: item.sample_num,
-                        totalSamples: item.total_samples,
-                        process: proc,
-                        isCustom: item.is_custom,
-                        done: item.done,
-                        doneDate: item.done_date,
-                        obs: item.obs,
-                        priority: item.is_priority || false,
-                        isFailed: item.is_failed || false
-                    });
+                    // Se for custom OU falha (falha é sempre custom)
+                    if (item.is_custom && !item.is_deleted) {
+                        // Verifica se já não foi adicionado pelo loop base (se for custom com ID diferente, ok)
+                        if (!globalItems.find(g => g.id === item.id)) {
+                            const proc = item.process_name || 'Geral';
+                            globalItems.push(createItemObj(
+                                item.id, item.model, item.sample_num, item.total_samples, 
+                                true, item, proc
+                            ));
+                        }
+                    }
                 });
             }
 
             renderApp();
-            renderPerformance();
+            // Garante que renderPerformance existe antes de chamar
+            if (typeof renderPerformance === "function") renderPerformance();
         } catch (error) {
             console.error(error);
             showStatus('error', '❌ Erro de conexão: ' + error.message);
@@ -322,12 +344,27 @@
         document.getElementById('loadingOverlay').style.display = 'none';
     }
 
+    function createItemObj(id, model, num, total, isCustom, dbData, processName) {
+        return {
+            id: id, model: model, sampleNum: num, totalSamples: total, isCustom: isCustom,
+            isFirst: num === 1,
+            done: dbData ? dbData.done : false,
+            doneDate: dbData ? dbData.done_date : null,
+            obs: dbData ? dbData.obs : "",
+            priority: dbData ? dbData.is_priority : false,
+            process: processName,
+            isFailed: dbData ? dbData.is_failed : false
+        };
+    }
+
     function renderApp() {
         const startStr = document.getElementById('startDate').value;
         const limit = parseInt(document.getElementById('dailyLimit').value);
         localStorage.setItem('fq53_start', startStr); localStorage.setItem('fq53_limit', limit);
 
+        // Pendentes: não feitos (nem falhas)
         let pending = globalItems.filter(i => !i.done).sort((a,b) => (b.priority ? 1 : 0) - (a.priority ? 1 : 0));
+        // Concluídos (Sucessos e Falhas)
         let completed = globalItems.filter(i => i.done).sort((a,b) => new Date(b.doneDate||0) - new Date(a.doneDate||0));
 
         const todayStr = new Date().toISOString().split('T')[0];
@@ -445,7 +482,7 @@
         });
     }
 
-    // --- BASELINE (METAS) ---
+    // --- BASELINE ---
     async function approveSchedule(processName, dateStr) {
         if(!confirm(`Confirmar meta para "${processName}"?`)) return;
         processTargets.set(processName, dateStr);
@@ -457,8 +494,7 @@
     // --- ACTIONS ---
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
-        const newState = !item.done;
-        item.isFailed = false; item.done = newState;
+        item.isFailed = false; item.done = !item.done;
         item.doneDate = item.done ? new Date().toISOString().split('T')[0] : null;
         renderApp(); renderPerformance(); await dbUpsert(item);
     }
@@ -466,16 +502,21 @@
     async function markAsFailed(id) {
         const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo:");
         if (!reason) return;
+
         const original = globalItems.find(i => i.id === id);
+        const failId = `${original.id}_fail_${Date.now()}`;
         
-        // CORREÇÃO AQUI: Mapear para snake_case para o banco
+        // CORREÇÃO: Garante que os números das amostras existam
+        const safeSampleNum = original.sampleNum || 1;
+        const safeTotalSamples = original.totalSamples || 1;
+
         const failRecord = {
-            id: `${original.id}_fail_${Date.now()}`,
+            id: failId,
             model: original.model,
-            sample_num: original.sampleNum, // Valor local
-            total_samples: original.totalSamples, // Valor local
-            process_name: original.process, // Valor local
-            is_custom: true, 
+            sample_num: safeSampleNum,
+            total_samples: safeTotalSamples,
+            process_name: original.process,
+            is_custom: true,
             done: true,
             done_date: new Date().toISOString().split('T')[0],
             is_failed: true,
@@ -484,8 +525,16 @@
             is_deleted: false
         };
 
-        // Objeto para inserir no BANCO (usando chaves do banco)
-        const dbPayload = {
+        // Adiciona ao array local
+        globalItems.push(createItemObj(
+            failRecord.id, failRecord.model, failRecord.sample_num, failRecord.total_samples, 
+            true, failRecord, failRecord.process_name
+        ));
+        
+        renderApp(); renderPerformance();
+        
+        // Salva no banco (Snake Case)
+        const { error } = await labDB.from(TABLE_MAIN).insert({
             id: failRecord.id,
             model: failRecord.model,
             sample_num: failRecord.sample_num,
@@ -498,30 +547,9 @@
             obs: failRecord.obs,
             is_priority: false,
             is_deleted: false
-        };
-
-        // Objeto para inserir no LOCAL (usando chaves locais camelCase)
-        globalItems.push({
-            id: failRecord.id,
-            model: failRecord.model,
-            sampleNum: failRecord.sample_num,
-            totalSamples: failRecord.total_samples,
-            process: failRecord.process_name,
-            isCustom: true,
-            done: true,
-            doneDate: failRecord.done_date,
-            obs: failRecord.obs,
-            priority: false,
-            isFailed: true
         });
-        
-        renderApp(); renderPerformance();
-        
-        const { error } = await labDB.from(TABLE_MAIN).insert(dbPayload);
-        if(error) {
-            console.error(error);
-            showStatus('error', 'Erro ao registrar falha: ' + error.message);
-        }
+
+        if(error) showStatus('error', 'Erro ao registrar falha: ' + error.message);
     }
 
     async function deleteFailRecord(id) {
@@ -566,7 +594,6 @@
         closeModals(); fetchData();
     }
 
-    // MODALS & EXTRAS
     function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
     function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
     function openManagerModal() {
@@ -577,6 +604,81 @@
             listDiv.innerHTML += `<div class="checklist-item" style="justify-content:space-between;"><div><strong>${modelName}</strong></div><button class="btn-danger" style="padding:4px;" onclick="deleteModel('${modelName}')">🗑️</button></div>`;
         });
         document.getElementById('managerModal').style.display = 'flex';
+    }
+
+    // --- PERFORMANCE CALCULATOR (DEFINIDA) ---
+    function renderPerformance() {
+        const startStr = document.getElementById('startDate').value;
+        const limit = parseInt(document.getElementById('dailyLimit').value);
+        const today = new Date(); today.setHours(0,0,0,0);
+        let loopDate = new Date(startStr + 'T00:00:00');
+        const daysData = [];
+        
+        let totalDone = 0;
+        let totalSuccess = 0;
+        let daysCounted = 0;
+
+        while(loopDate <= today) {
+            if(loopDate.getDay() !== 0 && loopDate.getDay() !== 6) {
+                const dateKey = loopDate.toISOString().split('T')[0];
+                const itemsForDay = globalItems.filter(i => i.doneDate === dateKey);
+                const countTotal = itemsForDay.length;
+                
+                const isToday = loopDate.getTime() === today.getTime();
+                if (!isToday || countTotal > 0) {
+                    const countSuccess = itemsForDay.filter(i => !i.isFailed).length;
+                    const countFail = countTotal - countSuccess;
+
+                    daysData.push({ 
+                        date: dateKey, dateObj: new Date(loopDate), 
+                        countTotal, countSuccess, countFail, target: limit, log: globalLogs.get(dateKey) || "" 
+                    });
+
+                    totalDone += countTotal;
+                    totalSuccess += countSuccess;
+                    daysCounted++; 
+                }
+            }
+            loopDate.setDate(loopDate.getDate() + 1);
+        }
+
+        const avgTotal = daysCounted > 0 ? (totalDone / daysCounted).toFixed(1) : "0.0";
+        const avgEffective = daysCounted > 0 ? (totalSuccess / daysCounted).toFixed(1) : "0.0";
+        
+        document.getElementById('perfTotalAvg').innerText = avgTotal;
+        document.getElementById('perfEffectiveAvg').innerText = avgEffective;
+        
+        const ratio = totalDone > 0 ? Math.round((totalSuccess / totalDone) * 100) : 0;
+        document.getElementById('perfRatio').innerText = ratio + "%";
+
+        const logBody = document.getElementById('logTableBody');
+        logBody.innerHTML = '';
+        [...daysData].reverse().forEach(d => {
+            let statusBadge = (d.countTotal >= d.target) ? `<span class="badge badge-ok">Meta OK</span>` : `<span class="badge badge-danger">Baixo</span>`;
+            const row = `<tr><td>${d.dateObj.toLocaleDateString('pt-BR')}</td><td>${d.target}</td><td>${d.countSuccess} <small>(+${d.countFail} falhas)</small></td><td>${statusBadge}</td><td><input type="text" class="obs-input" value="${d.log}" onchange="saveLog('${d.date}', this.value)"></td></tr>`;
+            logBody.innerHTML += row;
+        });
+        
+        updateChart(daysData);
+    }
+
+    function updateChart(data) {
+        const ctx = document.getElementById('perfChart').getContext('2d');
+        if(performanceChart) performanceChart.destroy();
+        const recent = data.slice(-14);
+        
+        performanceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: recent.map(d => d.dateObj.toLocaleDateString('pt-BR', {day:'2-digit',month:'2-digit'})),
+                datasets: [
+                    { label: 'Realizado (Útil)', data: recent.map(d=>d.countSuccess), backgroundColor: '#0056b3', stack: 'Stack 0' },
+                    { label: 'Falha (Perda)', data: recent.map(d=>d.countFail), backgroundColor: '#dc3545', stack: 'Stack 0' },
+                    { label: 'Meta', data: recent.map(d=>d.target), type: 'line', borderColor: '#28a745', borderWidth: 2, pointRadius: 0 }
+                ]
+            },
+            options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+        });
     }
 
     function exportExcel() {
@@ -593,7 +695,6 @@
         doc.autoTable({startY:30, head:[['Data','Proc','Mod','St','Obs']], body:data});
         doc.save("Relatorio.pdf");
     }
-    async function secureReset() { if(prompt("Senha:")==="admin123") { await labDB.from(TABLE_MAIN).delete().neq('id','0'); await labDB.from(TABLE_LOGS).delete().neq('date','0'); location.reload(); } }
 </script>
 
 </body>
