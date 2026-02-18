@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PCP Advanced Labs - FQ-053</title>
+    <title>PCP Advanced Labs - V15.2</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -20,15 +20,13 @@
         header { border-bottom: 1px solid #eee; margin-bottom: 20px; padding-bottom: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
         h1 { margin: 0; color: var(--primary); font-size: 1.4rem; display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
         
-        /* STATUS DE CONEXÃO */
-        #saveStatus { font-size: 0.8rem; font-weight: bold; padding: 5px 10px; border-radius: 4px; transition: 0.3s; }
-        .status-saved { color: var(--success); background: #d4edda; }
-        .status-saving { color: #856404; background: #fff3cd; }
-        .status-error { color: white; background: var(--danger); }
+        /* STATUS BAR */
+        #status-bar { padding: 8px 15px; border-radius: 6px; font-size: 0.9rem; font-weight: bold; display:none; margin-bottom: 15px; }
+        .status-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
 
         .tab-menu { display: flex; gap: 5px; background: #e9ecef; padding: 5px; border-radius: 8px; }
         .tab-btn { padding: 8px 16px; border: none; background: transparent; cursor: pointer; border-radius: 6px; font-weight: 600; color: #666; transition: 0.2s; display: flex; align-items: center; gap: 6px; }
-        .tab-btn:hover { background: rgba(255,255,255,0.5); }
         .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .tab-content { display: none; animation: fadeIn 0.3s; }
         .tab-content.active { display: block; }
@@ -108,14 +106,15 @@
 
 <div class="container">
     <header>
-        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V15.1</span></h1>
-        <div id="saveStatus" class="status-saved">☁️ Todos os dados salvos</div>
+        <h1><i class="fas fa-tasks"></i> PCP Advanced Labs <span style="font-size:0.5em; background:var(--info); color:white; padding:3px 6px; border-radius:4px; vertical-align:middle;">V15.2</span></h1>
         <div class="tab-menu">
             <button class="tab-btn active" onclick="switchTab('cronograma')"><i class="fas fa-calendar-alt"></i> Cronograma</button>
             <button class="tab-btn" onclick="switchTab('historico')"><i class="fas fa-history"></i> Histórico</button>
             <button class="tab-btn" onclick="switchTab('performance')"><i class="fas fa-chart-line"></i> Performance</button>
         </div>
     </header>
+
+    <div id="status-bar"></div>
 
     <div id="tab-cronograma" class="tab-content active">
         <div class="dashboard-grid">
@@ -256,17 +255,17 @@
         await fetchData();
     };
 
-    // Nova função manual de sincronização (sem reload brusco)
-    async function fetchManual() {
-        setSaveStatus('saving', '🔄 Sincronizando...');
-        await fetchData();
-        setSaveStatus('saved', '☁️ Dados atualizados');
+    function showStatus(type, msg) {
+        const bar = document.getElementById('status-bar');
+        bar.className = 'status-' + type;
+        bar.innerHTML = msg;
+        bar.style.display = 'block';
+        if(type === 'success') setTimeout(() => { bar.style.display = 'none'; }, 3000);
     }
 
-    function setSaveStatus(type, msg) {
-        const el = document.getElementById('saveStatus');
-        el.className = 'status-' + type;
-        el.innerText = msg;
+    async function fetchManual() {
+        showStatus('success', '🔄 Sincronizando dados...');
+        await fetchData();
     }
 
     function switchTab(tab) {
@@ -277,23 +276,20 @@
     }
 
     async function fetchData() {
+        document.getElementById('loadingOverlay').style.display = 'flex';
         try {
-            // Tenta buscar as tabelas. Se targets falhar (não existir), continuamos.
             const { data: items, error: err1 } = await labDB.from(TABLE_MAIN).select('*');
+            if(err1) throw err1;
+            
             const { data: logs } = await labDB.from(TABLE_LOGS).select('*');
             const { data: targets } = await labDB.from(TABLE_TARGETS).select('*');
 
-            if(err1) throw err1;
-
-            // Processa Targets
             processTargets = new Map();
             if(targets) targets.forEach(t => processTargets.set(t.process_name, t.target_date));
 
-            // Processa Logs
             globalLogs = new Map();
             if(logs) logs.forEach(l => globalLogs.set(l.date, l.obs));
 
-            // Processa Itens
             globalItems = [];
             if(items) {
                 items.forEach(item => {
@@ -317,12 +313,11 @@
 
             renderApp();
             renderPerformance();
-            document.getElementById('loadingOverlay').style.display = 'none';
-        } catch(e) {
-            console.error(e);
-            alert("Erro ao conectar. Verifique se as tabelas foram criadas no Supabase.\n" + e.message);
-            document.getElementById('loadingOverlay').style.display = 'none';
+        } catch (error) {
+            console.error(error);
+            showStatus('error', '❌ Erro de conexão: ' + error.message);
         }
+        document.getElementById('loadingOverlay').style.display = 'none';
     }
 
     function renderApp() {
@@ -398,7 +393,6 @@
                 currentDate.setDate(currentDate.getDate()+1);
             }
             
-            // --- RENDER DOS PROCESSOS E METAS ---
             const forecastDiv = document.getElementById('forecastContainer');
             forecastDiv.innerHTML = '';
             
@@ -449,22 +443,30 @@
         });
     }
 
-    // --- BASELINE (METAS) ---
-    async function approveSchedule(processName, dateStr) {
-        if(!confirm(`Confirmar meta de entrega para "${processName}" em ${new Date(dateStr).toLocaleDateString('pt-BR')}?`)) return;
-        processTargets.set(processName, dateStr);
-        renderApp(); 
-        setSaveStatus('saving', 'Salvando meta...');
-        const { error } = await labDB.from(TABLE_TARGETS).upsert({ process_name: processName, target_date: dateStr });
-        if(error) { alert("Erro: " + error.message); setSaveStatus('error', 'Erro ao salvar'); }
-        else setSaveStatus('saved', 'Meta salva!');
+    // --- ACTIONS COM DIAGNÓSTICO ---
+    async function dbUpsert(item) {
+        const { error } = await labDB.from(TABLE_MAIN).upsert({
+            id: item.id, model: item.model, sample_num: item.sampleNum, total_samples: item.totalSamples, 
+            is_custom: item.isCustom, done: item.done, done_date: item.doneDate, obs: item.obs, 
+            is_priority: item.priority, process_name: item.process, is_failed: item.isFailed, is_deleted: false
+        });
+        if(error) {
+            console.error(error);
+            showStatus('error', '⚠️ Erro ao salvar: ' + error.message + ' (Verifique as colunas no Supabase)');
+        }
     }
 
-    // --- ACTIONS ---
+    async function approveSchedule(processName, dateStr) {
+        if(!confirm(`Confirmar meta para "${processName}"?`)) return;
+        processTargets.set(processName, dateStr);
+        renderApp(); 
+        const { error } = await labDB.from(TABLE_TARGETS).upsert({ process_name: processName, target_date: dateStr });
+        if(error) showStatus('error', 'Erro ao salvar meta: ' + error.message);
+    }
+
     async function toggleItem(id) {
         const item = globalItems.find(i => i.id === id);
-        const newState = !item.done;
-        item.isFailed = false; item.done = newState;
+        item.isFailed = false; item.done = !item.done;
         item.doneDate = item.done ? new Date().toISOString().split('T')[0] : null;
         renderApp(); renderPerformance(); await dbUpsert(item);
     }
@@ -472,44 +474,31 @@
     async function markAsFailed(id) {
         const reason = prompt("⚠️ REGISTRO DE FALHA\n\nDescreva o motivo:");
         if (!reason) return;
-
         const original = globalItems.find(i => i.id === id);
         const failId = `${original.id}_fail_${Date.now()}`;
-        
         const failRecord = {
-            id: failId,
-            model: original.model,
-            sample_num: original.sampleNum,
-            total_samples: original.totalSamples,
-            process: original.process,
-            isCustom: true,
-            done: true,
-            doneDate: new Date().toISOString().split('T')[0],
-            isFailed: true,
-            obs: "[FALHA] " + reason,
-            priority: false
+            id: failId, model: original.model, sample_num: original.sampleNum, total_samples: original.totalSamples,
+            process: original.process, isCustom: true, done: true,
+            doneDate: new Date().toISOString().split('T')[0], isFailed: true,
+            obs: "[FALHA] " + reason, priority: false
         };
-
         globalItems.push(failRecord); 
         renderApp(); renderPerformance();
-
-        setSaveStatus('saving', 'Registrando falha...');
-        await labDB.from(TABLE_MAIN).insert({
+        
+        const { error } = await labDB.from(TABLE_MAIN).insert({
             id: failRecord.id, model: failRecord.model, sample_num: failRecord.sampleNum,
             total_samples: failRecord.totalSamples, process_name: failRecord.process,
             is_custom: true, done: true, done_date: failRecord.doneDate, is_failed: true,
             obs: failRecord.obs, is_priority: false, is_deleted: false
         });
-        setSaveStatus('saved', 'Falha registrada');
+        if(error) showStatus('error', 'Erro ao registrar falha: ' + error.message);
     }
 
     async function deleteFailRecord(id) {
-        if(!confirm("Apagar este registro?")) return;
+        if(!confirm("Apagar registro?")) return;
         globalItems = globalItems.filter(i => i.id !== id);
         renderApp(); renderPerformance();
-        setSaveStatus('saving', 'Apagando...');
         await labDB.from(TABLE_MAIN).delete().eq('id', id);
-        setSaveStatus('saved', 'Apagado');
     }
 
     async function togglePriority(id) { const item = globalItems.find(i => i.id === id); item.priority = !item.priority; renderApp(); await dbUpsert(item); }
@@ -517,14 +506,38 @@
     async function saveObs(id, val) { const item = globalItems.find(i => i.id === id); item.obs = val; await dbUpsert(item); }
     async function saveLog(d, v) { globalLogs.set(d, v); await labDB.from(TABLE_LOGS).upsert({date: d, obs: v}); }
     
-    async function dbUpsert(item) {
-        setSaveStatus('saving', 'Salvando...');
-        await labDB.from(TABLE_MAIN).upsert({
-            id: item.id, model: item.model, sample_num: item.sampleNum, total_samples: item.totalSamples, 
-            is_custom: item.isCustom, done: item.done, done_date: item.doneDate, obs: item.obs, 
-            is_priority: item.priority, process_name: item.process, is_failed: item.isFailed, is_deleted: false
+    async function addNewModel() {
+        const proc = document.getElementById('newProcessName').value || "Geral";
+        const name = document.getElementById('newModelName').value;
+        const count = document.getElementById('newModelCount').value;
+        if(!name) return;
+        const baseId = 'custom_' + Date.now();
+        const inserts = [];
+        for(let i=1; i<=count; i++) inserts.push({ id: `${baseId}_${i}`, model: name, sample_num: i, total_samples: count, is_custom: true, done: false, done_date: null, obs: "", is_priority: false, is_deleted: false, process_name: proc, is_failed: false });
+        
+        const { error } = await labDB.from(TABLE_MAIN).insert(inserts);
+        if(error) showStatus('error', 'Erro ao adicionar: ' + error.message);
+        else { closeModals(); fetchData(); }
+    }
+
+    async function deleteModel(modelName) {
+        if(!confirm("Excluir?")) return;
+        const items = globalItems.filter(i => i.model === modelName);
+        for (let item of items) { item.is_deleted = true; await labDB.from(TABLE_MAIN).update({ is_deleted: true }).eq('id', item.id); }
+        closeModals(); fetchData();
+    }
+
+    // --- MODALS & EXTRAS ---
+    function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
+    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
+    function openManagerModal() {
+        const listDiv = document.getElementById('managerList');
+        listDiv.innerHTML = '';
+        const uniqueModels = [...new Set(globalItems.map(i => i.model))];
+        uniqueModels.forEach(modelName => {
+            listDiv.innerHTML += `<div class="checklist-item" style="justify-content:space-between;"><div><strong>${modelName}</strong></div><button class="btn-danger" style="padding:4px;" onclick="deleteModel('${modelName}')">🗑️</button></div>`;
         });
-        setSaveStatus('saved', 'Salvo!');
+        document.getElementById('managerModal').style.display = 'flex';
     }
 
     // --- PERFORMANCE CALCULATOR ---
@@ -545,7 +558,6 @@
                 const itemsForDay = globalItems.filter(i => i.doneDate === dateKey);
                 const countTotal = itemsForDay.length;
                 
-                // Inclui hoje mesmo se vazio, mas cuidado com a média
                 const isToday = loopDate.getTime() === today.getTime();
                 if (!isToday || countTotal > 0) {
                     const countSuccess = itemsForDay.filter(i => !i.isFailed).length;
@@ -603,55 +615,20 @@
         });
     }
 
-    // MODALS & EXTRAS
-    function openAddModal() { document.getElementById('addModal').style.display = 'flex'; }
-    function closeModals() { document.querySelectorAll('.modal-overlay').forEach(m => m.style.display='none'); }
-    function openManagerModal() {
-        const listDiv = document.getElementById('managerList');
-        listDiv.innerHTML = '';
-        const uniqueModels = [...new Set(globalItems.map(i => i.model))];
-        uniqueModels.forEach(modelName => {
-            listDiv.innerHTML += `<div class="checklist-item" style="justify-content:space-between;"><div><strong>${modelName}</strong></div><button class="btn-danger" style="padding:4px 8px; font-size:0.8rem;" onclick="deleteModel('${modelName}')">🗑️</button></div>`;
-        });
-        document.getElementById('managerModal').style.display = 'flex';
-    }
-    
-    async function addNewModel() {
-        const proc = document.getElementById('newProcessName').value || "Geral";
-        const name = document.getElementById('newModelName').value;
-        const count = document.getElementById('newModelCount').value;
-        if(!name) return;
-        const baseId = 'custom_' + Date.now();
-        const inserts = [];
-        for(let i=1; i<=count; i++) inserts.push({ id: `${baseId}_${i}`, model: name, sample_num: i, total_samples: count, is_custom: true, done: false, done_date: null, obs: "", is_priority: false, is_deleted: false, process_name: proc, is_failed: false });
-        setSaveStatus('saving', 'Adicionando...');
-        await labDB.from(TABLE_MAIN).insert(inserts);
-        setSaveStatus('saved', 'Adicionado');
-        closeModals(); fetchData();
-    }
-
-    async function deleteModel(modelName) {
-        if(!confirm("Excluir?")) return;
-        const items = globalItems.filter(i => i.model === modelName);
-        for (let item of items) { item.is_deleted = true; await labDB.from(TABLE_MAIN).update({ is_deleted: true }).eq('id', item.id); }
-        closeModals(); fetchData();
-    }
-
     function exportExcel() {
         if(globalItems.filter(i=>i.done).length === 0) return alert("Nada para exportar.");
         const wb = XLSX.utils.book_new();
-        const data = globalItems.filter(i=>i.done).map(i=>({"Data":i.doneDate,"Proc":i.process,"Mod":i.model,"St":i.isFailed?"FALHA":"OK","Obs":i.obs}));
-        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data), "Hist");
-        XLSX.writeFile(wb, "LabReport.xlsx");
+        const doneData = globalItems.filter(i => i.done).map(i => ({ "Data": i.doneDate, "Processo": i.process, "Modelo": i.model, "Amostra": i.sampleNum, "Status": i.isFailed?"FALHA":"OK", "Obs": i.obs }));
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(doneData), "Histórico");
+        XLSX.writeFile(wb, "Histórico_AdvancedLabs.xlsx");
     }
     function exportPDF() {
         const { jsPDF } = window.jspdf; const doc = new jsPDF();
         doc.text("Histórico Advanced Labs", 14, 20);
-        const data = globalItems.filter(i=>i.done).map(i=>[i.doneDate, i.process, i.model, i.isFailed?"FALHA":"OK", i.obs]);
-        doc.autoTable({startY:30, head:[['Data','Proc','Mod','St','Obs']], body:data});
-        doc.save("Relatorio.pdf");
+        const data = globalItems.filter(i=>i.done).map(i=>[i.doneDate||'-', i.process, i.model, i.isFailed?'FALHA':'OK', i.obs||'']);
+        doc.autoTable({ startY: 30, head: [['Data', 'Processo', 'Modelo', 'Status', 'Obs']], body: data });
+        doc.save("Relatorio_AdvancedLabs.pdf");
     }
-    async function secureReset() { if(prompt("Senha:")==="admin123") { await labDB.from(TABLE_MAIN).delete().neq('id','0'); await labDB.from(TABLE_LOGS).delete().neq('date','0'); location.reload(); } }
 </script>
 
 </body>
